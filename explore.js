@@ -21,14 +21,14 @@
       text.className = 'explore-page-title';
       text.textContent = page.title;
       const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      arrow.setAttribute('viewBox', '0 0 24 24');
+      arrow.setAttribute('viewBox', '0 0 16 16');
       arrow.setAttribute('class', 'explore-arrow');
       arrow.setAttribute('aria-hidden', 'true');
       arrow.setAttribute('fill', 'none');
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M5 12h13M13 7l5 5-5 5');
+      path.setAttribute('d', 'M3 13 13 3M5 3h8v8');
       path.setAttribute('stroke', 'currentColor');
-      path.setAttribute('stroke-width', '1.2');
+      path.setAttribute('stroke-width', '1.4');
       path.setAttribute('stroke-linecap', 'round');
       path.setAttribute('stroke-linejoin', 'round');
       arrow.append(path);

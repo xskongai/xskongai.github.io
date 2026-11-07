@@ -25,3 +25,7 @@
 .explore-list a { font-family:inherit; font-size:15px; font-weight:400; padding:17px 0; }
 .explore-arrow { width:18px; height:18px; }
 @media(max-width:520px) { .explore-list a { font-size:14px; padding:16px 0; } }
+
+/* Match the shared link arrow. */
+.explore-arrow { width:13px; height:13px; color:currentColor; }
+.explore-list a:hover .explore-arrow { transform:none; color:currentColor; }
