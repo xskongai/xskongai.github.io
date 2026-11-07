@@ -1,0 +1,14 @@
+/* Explore: plain text links with the same diagonal arrow as other pages. */
+#explore .explore-tools { display:flex; align-items:center; justify-content:space-between; gap:24px; max-width:720px; margin:24px 0 20px; }
+#explore .explore-tools input { width:100%; max-width:330px; min-width:0; padding:8px 0; border:0; border-radius:0; background:transparent; color:inherit; font:inherit; font-size:15px; }
+#explore .explore-tools input::placeholder { color:#929292; }
+#explore .explore-tools input:focus-visible { outline:1px solid #888; outline-offset:4px; }
+#explore .explore-status { flex:none; font-size:13px; color:#929292; }
+#explore-list { display:flex; flex-direction:column; gap:3px; margin:0; padding:0; list-style:none; max-width:720px; }
+#explore-list li { border:0; margin:0; padding:0; }
+#explore-list a { display:inline-flex; justify-content:flex-start; align-items:center; gap:13px; min-height:44px; padding:8px 0; border:0; font:inherit; font-size:15px; line-height:1.6; color:#353535; text-decoration:none; overflow-wrap:anywhere; }
+#explore-list .explore-page-title { flex:0 1 auto; min-width:0; }
+#explore-list .explore-arrow { display:block; flex:none; width:13px; height:13px; color:currentColor; transform:none; transition:none; }
+#explore-list a:hover { color:#777; }
+#explore-list a:focus-visible { outline:1px solid #888; outline-offset:4px; }
+@media(max-width:520px) { #explore .explore-tools { gap:16px; } #explore-list a { font-size:14px; } }
