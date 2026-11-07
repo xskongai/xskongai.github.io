@@ -10,5 +10,10 @@
     nav.append(a);
   }
   inner.append(nav); header.append(inner);
-  if (current === 'about') document.getElementById('site-intro').innerHTML = "    <section class=\"hero\" aria-labelledby=\"hero-title\">\n      <div class=\"hero-art\" aria-hidden=\"true\"><img src=\"assets/hero.png\" alt=\"\"></div>\n      <div class=\"hero-content\">\n        <h1 id=\"hero-title\">Xiaoshuang Kong</h1>\n        <p class=\"hero-subtitle\">Artificial Intelligence \u00b7 Research</p>\n        <span class=\"hero-stroke\" aria-hidden=\"true\"></span>\n        <p class=\"hero-description\">I study the algorithms, patterns, mechanisms, and generalization behind intelligent systems.</p>\n      </div>\n    </section>";
+  let intro = "    <section class=\"hero\" aria-labelledby=\"hero-title\">\n      <div class=\"hero-art\" aria-hidden=\"true\"><img src=\"assets/hero.png\" alt=\"\"></div>\n      <div class=\"hero-content\">\n        <h1 id=\"hero-title\">Xiaoshuang Kong</h1>\n        <p class=\"hero-subtitle\">Artificial Intelligence \u00b7 Research</p>\n        <span class=\"hero-stroke\" aria-hidden=\"true\"></span>\n        <p class=\"hero-description\">I study the algorithms, patterns, mechanisms, and generalization behind intelligent systems.</p>\n      </div>\n    </section>";
+  if (current !== 'about') {
+    intro = intro.replace(/<p class="hero-description">[\s\S]*?<\/p>/, '');
+    intro = intro.replace(/<span class="hero-stroke"[^>]*><\/span>/, '');
+  }
+  document.getElementById('site-intro').innerHTML = intro;
 })();
