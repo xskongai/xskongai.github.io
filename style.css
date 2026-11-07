@@ -1,9 +1,11 @@
+@font-face { font-family:'Caveat'; font-style:normal; font-weight:400; font-display:swap; src:url('assets/fonts/caveat.ttf') format('truetype'); }
+@font-face { font-family:'Fraunces'; font-style:normal; font-weight:400; font-display:swap; src:url('assets/fonts/fraunces.ttf') format('truetype'); }
 
     /* One-file Github Pages site. Visual design follows the supplied reference. */
     :root { color-scheme: light; --ink:#202020; --soft:#606060; --muted:#858585; --line:#d9d9d9; --inner:1400px; }
     *, *::before, *::after { box-sizing: border-box; }
     html { scroll-behavior:smooth; scroll-padding-top:86px; }
-    body { margin:0; background:#fff; color:var(--ink); font-family:Georgia,"Times New Roman",Times,serif; -webkit-font-smoothing:antialiased; }
+    body { margin:0; background:#fff; color:var(--ink); font-family:"Fraunces",Georgia,"Times New Roman",serif; -webkit-font-smoothing:antialiased; }
     a { color:inherit; text-decoration:none; }
     a:focus-visible { outline:2px solid #888; outline-offset:5px; }
     .shell { width:min(var(--inner),calc(100% - 80px)); margin-inline:auto; }
@@ -163,3 +165,13 @@
 .section-number { display:none; }
 @media(max-width:800px) { .hero-art { width:55vw; right:-26px; height:100%; max-height:none; } }
 @media(max-width:520px) { .hero-art { width:65vw; right:-18px; opacity:.4; height:100%; max-height:none; } }
+
+/* Approved typography: Fraunces throughout, Caveat only for the signature. */
+body { font-weight:400; font-optical-sizing:auto; }
+.hero h1 { font-family:"Caveat",cursive; font-weight:400; letter-spacing:0; font-size:38px; line-height:1.15; }
+.nav a, .hero-subtitle, .section-title, .section-description, .about-statement, .plain-link, .project-name, .project-description { font-family:inherit; }
+.section-title, .project-name { font-weight:500; }
+.hero-subtitle { font-size:18px; }
+.about-statement { font-size:18px; }
+@media(max-width:800px) { .hero h1 { font-size:36px; } }
+@media(max-width:520px) { .hero h1 { font-size:32px; } .hero-subtitle {font-size:16px;} .about-statement {font-size:16px;} }
