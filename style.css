@@ -121,3 +121,15 @@
 
 /* Keep navigation aligned after removing the repeated name. */
 .header-inner { justify-content:flex-end; }
+
+/* Identical common introduction on every page. About owns its statement. */
+.hero { height:230px; min-height:0; padding-top:64px; padding-bottom:44px; }
+.hero-art { bottom:0; }
+.about-statement { margin:0 0 52px; max-width:760px; color:#3b3b3b; font-size:20px; line-height:1.55; }
+@media(max-width:800px) {
+  .hero { height:215px; min-height:0; padding-top:56px; padding-bottom:36px; }
+}
+@media(max-width:520px) {
+  .hero { height:195px; min-height:0; padding-top:45px; padding-bottom:32px; }
+  .about-statement { font-size:17px; margin-bottom:30px; }
+}
