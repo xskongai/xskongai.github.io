@@ -18,12 +18,20 @@
       const a = document.createElement('a');
       a.href = href(page.path);
       const text = document.createElement('span');
+      text.className = 'explore-page-title';
       text.textContent = page.title;
-      const small = document.createElement('small');
-      small.textContent = page.path.slice(4);
-      text.append(small);
-      const arrow = document.createElement('span');
-      arrow.textContent = '↗'; arrow.setAttribute('aria-hidden', 'true');
+      const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      arrow.setAttribute('viewBox', '0 0 24 24');
+      arrow.setAttribute('class', 'explore-arrow');
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.setAttribute('fill', 'none');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M5 12h13M13 7l5 5-5 5');
+      path.setAttribute('stroke', 'currentColor');
+      path.setAttribute('stroke-width', '1.2');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      arrow.append(path);
       a.append(text, arrow); li.append(a); list.append(li);
     }
     status.textContent = query ? `${shown.length} / ${pages.length}` : `${pages.length} pages`;
