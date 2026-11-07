@@ -148,3 +148,18 @@
  .page-content .section { padding:20px 0 28px; }
  .page-content .section-description { font-size:16px; }
 }
+
+/* Fit the artwork inside the shared header and soften its outer edges. */
+.hero { overflow:hidden; }
+.hero-art {
+ top:0; bottom:auto; right:calc(50% - 50vw); width:50vw; height:100%;
+ max-height:none; opacity:.65;
+ -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 22%),linear-gradient(to bottom,#000 55%,transparent 100%);
+ -webkit-mask-composite:source-in;
+ mask-image:linear-gradient(to right,transparent 0%,#000 22%),linear-gradient(to bottom,#000 55%,transparent 100%);
+ mask-composite:intersect;
+}
+.hero-art img { width:100%; height:100%; object-fit:contain; object-position:right center; }
+.section-number { display:none; }
+@media(max-width:800px) { .hero-art { width:55vw; right:-26px; height:100%; max-height:none; } }
+@media(max-width:520px) { .hero-art { width:65vw; right:-18px; opacity:.4; height:100%; max-height:none; } }
