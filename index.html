@@ -108,6 +108,19 @@
 
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
+  
+    .explore { margin-top:24px; border-top:1px solid var(--line); min-height:0; }
+    .explore-tools { display:flex; gap:16px; align-items:center; margin:24px 0 18px; }
+    .explore-tools input { min-width:0; width:100%; max-width:480px; padding:11px 13px; border:1px solid var(--line); border-radius:0; font:inherit; color:var(--ink); background:#fff; }
+    .explore-status { color:var(--soft); font-size:15px; }
+    .explore-list { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 48px; }
+    .explore-list li { border-top:1px solid var(--line); }
+    .explore-list a { display:flex; gap:18px; align-items:center; justify-content:space-between; padding:18px 0; font-size:18px; overflow-wrap:anywhere; }
+    .explore-list a:hover { color:#777; }
+    .explore-list small { display:block; color:var(--muted); font-size:13px; margin-top:7px; }
+    .explore-empty { color:var(--soft); line-height:1.6; }
+    @media(max-width:800px) { .explore-list { grid-template-columns:1fr; } }
+    @media(max-width:520px) { .nav { flex-wrap:wrap; } .nav a { font-size:12px; } }
   </style>
 </head>
 <body id="top">
@@ -119,6 +132,7 @@
         <a href="#about">About</a>
         <a href="#research">Research</a>
         <a href="#projects">Projects</a>
+        <a href="#explore">Explore</a>
         <a href="#contact">Contact</a>
       </nav>
     </div>
@@ -158,6 +172,15 @@
         <a class="plain-link more-link" href="https://github.com/xskongai" target="_blank" rel="noopener noreferrer">Contact me <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13 13 3M5 3h8v8"/></svg></a>
       </section>
     </div>
+    <section id="explore" class="section explore" aria-labelledby="explore-title">
+      <h2 class="section-heading" id="explore-title"><span class="section-number">05</span><span class="section-title">EXPLORE</span><span class="section-rule" aria-hidden="true"></span></h2>
+      <p class="section-description">A growing collection of ideas, visual notes, and interactive pages.</p>
+      <div class="explore-tools"><input id="explore-search" type="search" aria-label="Search Explore pages" placeholder="Search pages…" autocomplete="off"><span id="explore-status" class="explore-status" role="status" aria-live="polite">Loading…</span></div>
+      <ul id="explore-list" class="explore-list"></ul>
+      <p id="explore-empty" class="explore-empty" hidden></p>
+      <noscript>Enable JavaScript to load this collection.</noscript>
+    </section>
   </main>
+  <script src="explore.js" defer></script>
 </body>
 </html>
