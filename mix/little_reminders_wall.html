@@ -1,0 +1,116 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Little Reminders — A Living Wall</title><style>
+:root{--bg:#f7f7f4;--ink:#3c4143;--soft:#888e91}*{box-sizing:border-box}html{scroll-behavior:smooth}html,body{height:100%;overflow:hidden}body{margin:0;background:var(--bg);font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink)}button,input,textarea{font:inherit}button{cursor:pointer}.canvas{height:100dvh;overflow:hidden;background:radial-gradient(ellipse at 15% 6%,#fff 0,transparent 50%),radial-gradient(ellipse at 85% 80%,#eeefec 0,transparent 55%),#f7f7f4;position:relative;padding:26px 36px}.wall{position:relative;width:min(1530px,100%);height:100%;margin:auto;overflow:visible;perspective:1200px;transform-style:preserve-3d}.note{position:absolute;overflow:hidden;display:flex;align-items:center;gap:9px;min-height:32px;padding:5px 13px;border:1px solid var(--edge);border-radius:2px;background:var(--paper);box-shadow:0 3px 13px #42464809;white-space:nowrap;cursor:pointer;text-align:left;transform:translate3d(0,0,0) rotate(var(--angle));transform-origin:center center;transition:transform .34s cubic-bezier(.22,.8,.2,1),background .34s,border-color .32s,box-shadow .34s,filter .34s,opacity .34s;will-change:transform,filter,opacity}.note::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,#fff9,transparent 38%,#fff3 75%);pointer-events:none}.note .dot{width:5px;height:5px;border-radius:50%;background:#aeb2b0;flex:none}.note .en{font-size:12px;font-weight:550;letter-spacing:.007em;color:#4a5052}.note .slash{font-size:11px;color:#b2b7b5}.note .zh{font-size:11px;color:#737b7e}.note .en,.note .zh{flex:none;white-space:nowrap}.note .stamp{flex:none;margin-left:auto;padding-left:9px;font-size:8px;letter-spacing:.01em;font-variant-numeric:tabular-nums;color:#a2aaa9;white-space:nowrap;border-left:1px solid #dfe2df}.note.lit .stamp{color:#78898d;border-color:#ced6d8}@media(max-width:700px){.note .stamp{font-size:7px;padding-left:5px}}.note:hover{z-index:8;box-shadow:0 7px 21px #333b3e15}.wall.focused .note{transition:background .4s,border-color .35s,box-shadow .35s,filter .35s,opacity .35s}.note.lit{z-index:12;background:#fff!important;border-color:#c2ccd0;box-shadow:0 1px 12px #fff,0 0 34px #eef4f6ee,0 18px 44px #8599a126;filter:brightness(1.09)}.note.lit .dot{background:#aabfc9}.note.lit .en{color:#222b30}.note.faded{opacity:.42;filter:brightness(.93) saturate(.76)}.note:focus-visible{outline:2px solid #aabdc6;outline-offset:3px}.note.pulse{animation:glint .65s ease-out}.note .spark{position:absolute;inset:-15px;border:1px solid #dde9ed;border-radius:8px;opacity:0;pointer-events:none}.note.pulse .spark{animation:ring .6s ease-out}@keyframes glint{0%{filter:brightness(1)}37%{filter:brightness(1.13)}100%{filter:brightness(1.045)}}@keyframes ring{0%{opacity:.75;transform:scale(.98)}100%{opacity:0;transform:scale(1.09)}}
+.edge{position:fixed;right:0;top:0;width:85px;height:85px;z-index:20}.edge button{position:absolute;right:19px;top:18px;background:#f7f7f4e8;border:1px solid #d9dddd;border-radius:50%;height:34px;width:34px;display:grid;place-items:center;color:#7e898a;opacity:0;transform:translateY(-5px);transition:.25s;box-shadow:0 4px 15px #3331}.edge:hover button,.edge button:focus-visible,.edge:focus-within button{opacity:1;transform:none}.edge button:hover{background:#fff;color:#4b6068}.panel-overlay{position:fixed;inset:0;background:#31383c30;backdrop-filter:blur(3px);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px}.panel-overlay[hidden]{display:none}.panel{width:min(500px,100%);background:#fafaf8;border:1px solid #e0e4e2;border-radius:12px;padding:30px;box-shadow:0 25px 90px #26313624}.panel h2{font-size:20px;font-weight:550;letter-spacing:-.02em;margin:0 0 6px}.panel p{color:#899192;font-size:12px;line-height:1.7;margin:0 0 22px}.panel label{font-size:11px;color:#777f81;display:block;margin:13px 0 7px}.panel input,.panel textarea{width:100%;padding:12px;border:1px solid #dce0de;background:white;border-radius:6px;outline:0;color:#343d41;font-size:13px}.panel input:focus,.panel textarea:focus{border-color:#9bb1b6}.panel textarea{min-height:74px;resize:vertical}.actions{display:flex;align-items:center;gap:9px;justify-content:flex-end;margin-top:20px}.actions button{border:1px solid #d8dcda;background:#fff;border-radius:6px;padding:10px 15px;color:#566064;font-size:12px}.actions button.primary{background:#48575b;border-color:#48575b;color:white}.actions button.danger{margin-right:auto;color:#a66c6b}.utility{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#a0a6a6}.utility button{border:0;background:transparent;color:#8c9597;font-size:11px;padding:0}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#424d50;color:white;border-radius:99px;padding:9px 15px;font-size:12px;z-index:70;pointer-events:none;opacity:0;transition:opacity .2s}.toast.show{opacity:1}@media(max-width:700px){.canvas{padding:22px 12px}.note{min-height:30px;padding:5px 9px;gap:6px}.note .en{font-size:10.5px}.note .zh{font-size:10px}.note .slash{font-size:9px}.panel{padding:21px}.edge button{opacity:.42}}
+.pager{position:fixed;right:23px;bottom:19px;z-index:15;display:flex;gap:12px;align-items:center;color:#a7aeae;font-size:11px;letter-spacing:.12em}.pager button{background:transparent;border:0;color:#919e9f;font-size:17px;padding:5px 7px;cursor:pointer}.pager button:hover{color:#404e52}.pager button:disabled{opacity:.2;cursor:default}@media(prefers-reduced-motion:reduce){.note{transition:none!important}.note.pulse,.note.pulse .spark{animation:none!important}}
+ .wall-title{position:absolute;top:20px;left:40px;z-index:11;display:flex;align-items:baseline;gap:11px;pointer-events:none}.wall-title strong{font-family:Georgia,"Times New Roman",serif;font-size:17px;font-weight:400;letter-spacing:.13em;color:#686d6d}.wall-title span{font-size:10px;letter-spacing:.10em;color:#a2a5a4}@media(max-width:700px){.wall-title{top:15px;left:16px;gap:7px}.wall-title strong{font-size:14px}.wall-title span{font-size:9px}}
+
+.note.grow-in{opacity:0;clip-path:inset(0 50% 0 50% round 2px);animation:paperGrow .46s cubic-bezier(.2,.8,.2,1) var(--grow-delay,0ms) both}
+@keyframes paperGrow{
+  0%{opacity:0;clip-path:inset(0 50% 0 50% round 2px);filter:brightness(1.14)}
+  65%{opacity:1;clip-path:inset(0 0% 0 0% round 2px);filter:brightness(1.06)}
+  100%{opacity:1;clip-path:inset(0 0% 0 0% round 2px);filter:none}
+}
+.growth-status{position:fixed;left:40px;bottom:23px;z-index:13;display:flex;align-items:baseline;gap:10px;color:#999f9e;font:10px Inter,-apple-system,sans-serif;letter-spacing:.08em;pointer-events:none}
+.growth-status b{font-size:13px;font-weight:400;letter-spacing:.10em;color:#737c7d;font-variant-numeric:tabular-nums}
+@media(max-width:700px){.growth-status{left:16px;bottom:22px}}
+@media(prefers-reduced-motion:reduce){.note.grow-in{animation:none;opacity:1;clip-path:none}}
+</style></head><body><main class="canvas"><div class="wall-title"><strong>Reminder Wall</strong><span>小小提醒</span></div><section class="wall" id="wall" aria-label="Little Reminders Wall"></section></main><div class="growth-status"><b id="growthCount">000</b><span>NOTES ON THIS WALL</span></div><nav class="pager" aria-label="Reminder wall pages"><button id="prevPage" aria-label="Previous wall">←</button><span id="pageLabel">01 / 01</span><button id="nextPage" aria-label="Next wall">→</button></nav><div class="edge"><button id="manage" aria-label="Add a new reminder" title="Add reminder · N">+</button></div><div class="panel-overlay" id="overlay" hidden><div class="panel" role="dialog" aria-modal="true" aria-label="Reminder editor"><h2 id="heading">A little reminder</h2><p>One thought, two languages. A little paper note for the wall.</p><label for="en">English · 英文</label><input id="en" maxlength="180" placeholder="Get out of bed within 10 minutes"/><label for="zh">中文 · Chinese</label><textarea id="zh" maxlength="180" placeholder="早上醒来以后在床上不要超过 10 分钟"></textarea><div class="utility"><span id="count">100 little notes</span><button id="export" title="Backup your added notes as JSON">Export my notes</button></div><div class="actions"><button class="danger" id="delete" hidden>Delete</button><button id="cancel">Cancel</button><button class="primary" id="save">Add to wall</button></div></div></div><div class="toast" id="toast" role="status"></div>
+<script>const DEFAULTS=[{"id": "1", "en": "Get out of bed within 10 minutes", "zh": "醒来后，别在床上停留超过 10 分钟"}];
+const KEY='little_reminders_v10';let custom=[],edits={},deleted=[],focusId=null,editId=null,created={};const $=x=>document.getElementById(x);const wall=$('wall');const prefersReduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+try{let s=JSON.parse(localStorage.getItem(KEY)||'{}');custom=Array.isArray(s.custom)?s.custom:[];edits=s.edits||{};deleted=Array.isArray(s.deleted)?s.deleted:[];focusId=s.focusId||(Array.isArray(s.lit)&&s.lit.length?s.lit[0]:null);created=s.created||{}}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify({custom,edits,deleted,focusId,created}))}catch(e){toast('Unable to save in this browser')}}
+function stamp(n){if(!created[n.id])created[n.id]=n.createdAt||new Date().toISOString();let d=new Date(created[n.id]);if(isNaN(d.getTime()))d=new Date();let z=v=>String(v).padStart(2,'0');return `${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`}
+function list(){return [...custom,...DEFAULTS.filter(n=>!deleted.includes(n.id)).map(n=>({...n,...(edits[n.id]||{})}))]}
+function hash(n){const x=Math.sin(n*91.71+23.2)*43758.54;return x-Math.floor(x)}
+function escapeHtml(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+const swatches=[['#fcfcfa','#e2e3e0'],['#f2f3f0','#d8dad7'],['#e8ebe9','#d2d6d4'],['#f5f5f3','#daddd9'],['#ebece9','#d1d3d0'],['#f9faf8','#e0e2df'],['#e4e8e7','#cbd0d0']];
+function setPose(el,dx=0,dy=0,rotate=0){const scale=Number(el.dataset.scale||1);const z=Number(el.dataset.z||0);el.style.transform=`translate3d(${dx.toFixed(1)}px,${dy.toFixed(1)}px,${z.toFixed(1)}px) rotate(${(Number(el.dataset.angle)+rotate).toFixed(2)}deg) scale(${scale})`}
+function applyFocusState(){
+ wall.classList.toggle('focused',!!focusId);
+ wall.querySelectorAll('.note').forEach(el=>{
+   const active=focusId===el.dataset.id;
+   const faded=!!focusId && !active;
+   el.classList.toggle('lit',active);
+   el.classList.toggle('faded',faded);
+   el.dataset.scale=active?1.12:(faded?0.92:1);
+   el.dataset.z=active?34:(faded?-24:0);
+   el.setAttribute('aria-pressed',String(active));
+   setPose(el,0,0,0);
+ });
+}
+let currentPage=0,totalPages=1,growthTimers=[];
+function clearGrowth(){growthTimers.forEach(clearTimeout);growthTimers=[]}
+function growWall(){
+ clearGrowth();
+ const nodes=Array.from(wall.querySelectorAll('.note'));
+ const count=$('growthCount');
+ const duration=Math.min(3400,Math.max(800,nodes.length*105));
+ count.textContent='000';
+ nodes.forEach((node,index)=>{
+   node.classList.remove('grow-in');
+   node.style.setProperty('--grow-delay',`${Math.round(index*duration/Math.max(nodes.length,1))}ms`);
+   if(!prefersReduced){void node.offsetWidth;node.classList.add('grow-in')}
+   const t=setTimeout(()=>{count.textContent=String(index+1).padStart(3,'0')},prefersReduced?0:Math.round(index*duration/Math.max(nodes.length,1))+180);
+   growthTimers.push(t);
+ });
+ if(!nodes.length)count.textContent='000';
+}
+
+function render(animate=false){
+ const all=list();all.forEach(stamp);persist();wall.replaceChildren();
+ const W=wall.clientWidth,H=wall.clientHeight,narrow=W<700;
+ const fontEn=narrow?'10.5px':'12px',fontZh=narrow?'10px':'11px';
+ const cv=document.createElement('canvas').getContext('2d');
+ function measure(t,font){cv.font=`${font} Inter,Arial,'PingFang SC',sans-serif`;return cv.measureText(t).width}
+ const h=narrow?30:32,step=narrow?48:51,gapX=narrow?10:18;
+ const maxRows=Math.max(2,Math.floor((H-75)/step));
+ const placements=[];let row=0,x=8,page=0;
+ all.forEach((n,i)=>{
+  let textW=measure(n.en||'',fontEn)+measure(n.zh||'',fontZh)+(narrow?145:173);
+  let w=Math.max(narrow?165:235,Math.min(textW+12,W-24));
+  let extra=(narrow?8:13)+Math.floor(hash(i+15)*(narrow?12:22));
+  if(x+w>W-8&&x>8){row++;x=8+Math.floor(hash(row+91)*Math.min(narrow?18:64,Math.max(0,W-w-16)));}
+  if(row>=maxRows){page++;row=0;x=8;}
+  if(x+w>W-8)x=8;
+  let y=62+row*step+Math.floor(hash(i+70)*5);
+  placements.push({n,i,x,y,w,page});x+=w+gapX+extra;
+ });
+ totalPages=Math.max(1,page+1);currentPage=Math.min(currentPage,totalPages-1);
+ for(const {n,i,x,y,w} of placements.filter(q=>q.page===currentPage)){
+   const yy=y,angle=hash(i+110)*1.8-.9;
+   const p=swatches[Math.floor(hash(i+129)*swatches.length)];
+   const en=n.en||''; const zh=n.zh||'';
+   const isLit=focusId===n.id; const isFaded=!!focusId && !isLit;
+   const baseScale=isLit?1.12:(isFaded?0.92:1); const baseZ=isLit?34:(isFaded?-24:0);
+   let el=document.createElement('button');el.type='button';el.className='note'+(isLit?' lit':'')+(isFaded?' faded':'');el.dataset.id=n.id;el.dataset.angle=angle;el.dataset.scale=baseScale;el.dataset.z=baseZ;el.title=`${en} / ${zh}\nClick: highlight · Double-click: edit`;el.style.cssText=`left:${x}px;top:${yy}px;width:${w}px;--angle:${angle}deg;--paper:${p[0]};--edge:${p[1]}`;el.setAttribute('aria-label',`${en}，${zh}`);el.setAttribute('aria-pressed',String(isLit));el.innerHTML=`<span class="dot"></span><span class="en"></span><span class="slash">/</span><span class="zh"></span><span class="stamp"></span><span class="spark"></span>`;el.querySelector('.en').textContent=en;el.querySelector('.zh').textContent=zh;el.querySelector('.stamp').textContent=stamp(n);
+// If a bilingual note is too long, scale the two texts to preserve a single-line strip.
+let available=w-(narrow?133:158);let measured=measure(en,fontEn)+measure(zh,fontZh)+13;let ratio=Math.min(1,available/Math.max(1,measured));if(ratio<1){el.querySelector('.en').style.fontSize=`${(parseFloat(fontEn)*ratio).toFixed(2)}px`;el.querySelector('.zh').style.fontSize=`${(parseFloat(fontZh)*ratio).toFixed(2)}px`}
+let tx=0,ty=0,rot=0,animation=0;const spring=()=>{if(animation)cancelAnimationFrame(animation);function frame(){tx*=.75;ty*=.75;rot*=.68;setPose(el,tx,ty,rot);if(Math.abs(tx)+Math.abs(ty)+Math.abs(rot)>.12){animation=requestAnimationFrame(frame)}else{animation=0;setPose(el,0,0,0)}}frame()};
+setPose(el,0,0,0);
+el.addEventListener('pointermove',e=>{if(e.pointerType==='touch'||prefersReduced)return;const r=el.getBoundingClientRect();const dx=Math.max(-1,Math.min(1,(e.clientX-r.left-r.width/2)/(r.width/2)));const dy=Math.max(-1,Math.min(1,(e.clientY-r.top-r.height/2)/(r.height/2)));tx=dx*3.4;ty=dy*2.1;rot=dx*3.2+dy*.9;setPose(el,tx,ty,rot)});el.addEventListener('pointerleave',spring);
+el.addEventListener('click',()=>{focusId=focusId===n.id?null:n.id;persist();applyFocusState();const active=wall.querySelector(`.note[data-id="${n.id}"]`);if(active&&focusId===n.id){active.classList.remove('pulse');void active.offsetWidth;active.classList.add('pulse')}});el.addEventListener('dblclick',e=>{e.preventDefault();openEditor(n.id)});
+
+   wall.appendChild(el);
+ }
+ applyFocusState();
+ $('count').textContent=`${all.length} little notes · ${custom.length} added`;
+ $('pageLabel').textContent=`${String(currentPage+1).padStart(2,'0')} / ${String(totalPages).padStart(2,'0')}`;
+ $('prevPage').disabled=currentPage===0;$('nextPage').disabled=currentPage===totalPages-1;
+ if(animate)growWall();else {clearGrowth();$('growthCount').textContent=String(wall.querySelectorAll('.note').length).padStart(3,'0')}
+}
+function turnPage(delta){const next=Math.max(0,Math.min(totalPages-1,currentPage+delta));if(next!==currentPage){currentPage=next;render(true)}}
+$('prevPage').onclick=()=>turnPage(-1);$('nextPage').onclick=()=>turnPage(1);
+function toast(m){let t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(window._toastTimer);window._toastTimer=setTimeout(()=>t.classList.remove('show'),2400)}
+function openEditor(id=null){editId=id;const n=id?list().find(n=>n.id===id):null;$('heading').textContent=n?'Edit this little note':'A little reminder';$('en').value=n?.en||'';$('zh').value=n?.zh||'';$('save').textContent=n?'Save changes':'Add to wall';$('delete').hidden=!n;$('overlay').hidden=false;$('en').focus()}
+function closeEditor(){$('overlay').hidden=true;editId=null}
+// Clicking anywhere on the empty canvas dismisses the focused note.
+// Keep the editor, pager and individual notes independently interactive.
+document.querySelector('.canvas').addEventListener('click', e => {
+  if (e.target.closest('.note') || !focusId || !$('overlay').hidden) return;
+  focusId=null;
+  persist();
+  applyFocusState();
+});
+$('manage').addEventListener('click',()=>openEditor());$('cancel').addEventListener('click',closeEditor);$('overlay').addEventListener('click',e=>{if(e.target===$('overlay'))closeEditor()});$('save').addEventListener('click',()=>{let en=$('en').value.trim(),zh=$('zh').value.trim();if(!en||!zh){toast('Please add both English and Chinese');return}if(editId){let i=custom.findIndex(n=>n.id===editId);if(i!==-1)custom[i]={...custom[i],en,zh};else edits[editId]={en,zh}}else custom.unshift({id:'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),en,zh,createdAt:new Date().toISOString()});persist();closeEditor();render(true);toast('Saved to your wall')});$('delete').addEventListener('click',()=>{if(!editId)return;custom=custom.filter(n=>n.id!==editId);if(!editId.startsWith('u'))deleted.push(editId);if(focusId===editId)focusId=null;persist();closeEditor();render(true);toast('Note removed')});$('export').addEventListener('click',()=>{let data=JSON.stringify({custom,edits,deleted,focusId},null,2);let url=URL.createObjectURL(new Blob([data],{type:'application/json'}));let a=document.createElement('a');a.href=url;a.download='little-reminders-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+window.addEventListener('keydown',e=>{if($('overlay').hidden&&e.key==='ArrowRight'){turnPage(1);return}if($('overlay').hidden&&e.key==='ArrowLeft'){turnPage(-1);return}if((e.key==='g'||e.key==='G')&&$('overlay').hidden&&!/INPUT|TEXTAREA/.test(e.target.tagName)){e.preventDefault();growWall();return}if(e.key==='Escape'&&!$('overlay').hidden){closeEditor();return}if((e.key==='n'||e.key==='N')&&!e.altKey&&!e.metaKey&&!e.ctrlKey&&$('overlay').hidden&&!/INPUT|TEXTAREA/.test(e.target.tagName)){e.preventDefault();openEditor()}});let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>render(false),140)});render(true);
+</script></body></html>
