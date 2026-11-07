@@ -1,0 +1,120 @@
+
+    /* One-file Github Pages site. Visual design follows the supplied reference. */
+    :root { color-scheme: light; --ink:#202020; --soft:#606060; --muted:#858585; --line:#d9d9d9; --inner:1400px; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:86px; }
+    body { margin:0; background:#fff; color:var(--ink); font-family:Georgia,"Times New Roman",Times,serif; -webkit-font-smoothing:antialiased; }
+    a { color:inherit; text-decoration:none; }
+    a:focus-visible { outline:2px solid #888; outline-offset:5px; }
+    .shell { width:min(var(--inner),calc(100% - 80px)); margin-inline:auto; }
+    .skip { position:absolute; z-index:10; top:-60px; left:20px; padding:8px 14px; background:#222; color:white; }
+    .skip:focus {top:15px;}
+    .header { border-bottom:1px solid var(--line); background:#fff; }
+    .header-inner { min-height:61px; display:flex; align-items:center; justify-content:space-between; gap:32px; }
+    .brand { font-size:19px; line-height:1.25; letter-spacing:-.026em; white-space:nowrap; }
+    .nav { display:flex; align-items:center; gap:48px; }
+    .nav a { font-size:15px; line-height:1.3; transition:color .15s ease; }
+    .nav a:hover,.plain-link:hover { color:#777; }
+    .hero { position:relative; isolation:isolate; height:341px; overflow:visible; padding-top:81px; }
+    .hero-content { position:relative; z-index:1; max-width:620px; }
+    .hero h1 { margin:0 0 15px; font-size:clamp(43px,4vw,54px); line-height:1.03; letter-spacing:-.041em; font-weight:400; }
+    .hero-subtitle { margin:0; color:#777; font-size:23px; line-height:1.32; }
+    .hero-stroke { display:block; width:31px; border-top:1px solid #555; margin:27px 0 21px; }
+    .hero-description { margin:0; max-width:600px; font-size:20px; line-height:1.47; letter-spacing:-.008em; color:#3b3b3b; }
+    .hero-art { position:absolute; pointer-events:none; z-index:0; width:54vw; right:calc(50% - 50vw); bottom:3px; }
+    .hero-art img { width:100%; height:auto; display:block; }
+    .overview { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); column-gap:110px; grid-template-columns:minmax(0,1.0476fr) minmax(0,1fr); border-top:1px solid var(--line); }
+    .section { min-width:0; border-bottom:1px solid var(--line); padding:44px 0 42px; min-height:266px; scroll-margin-top:30px; }
+    .section-heading { display:flex; gap:22px; align-items:center; margin:0 0 21px; min-height:20px; }
+    .section-number { font-size:13px; letter-spacing:.14em; color:#747474; font-weight:400; line-height:1; white-space:nowrap; }
+    .section-title { font-size:13px; letter-spacing:.215em; font-weight:600; line-height:1.5; white-space:nowrap; }
+    .section-rule { height:1px; background:var(--line); flex:1; min-width:15px; }
+    .section-description { margin:0; color:#434343; font-size:18px; line-height:1.54; letter-spacing:-.006em; max-width:590px; }
+    .plain-link { display:inline-flex; align-items:center; gap:17px; font-size:16px; border-bottom:1px solid #9c9c9c; padding:0 0 3px; line-height:1.4; transition:color .16s ease; }
+    .plain-link svg { width:13px; height:13px; stroke-width:1.4; }
+    .more-link { margin-top:25px; }
+    .projects { min-height:215px; padding-top:34px; padding-bottom:25px; }
+    .contact { min-height:215px; padding-top:34px; padding-bottom:25px; }
+    .projects .section-heading,.contact .section-heading { margin-bottom:23px; }
+    .project-list { list-style:none; margin:0; padding:0; display:grid; gap:17px; }
+    .project { display:grid; grid-template-columns:143px minmax(0,1fr); align-items:baseline; gap:17px; }
+    .project-name { font-size:17px; line-height:1.24; font-weight:600; white-space:nowrap; }
+    .project-name a:hover { text-decoration:underline; text-underline-offset:3px; }
+    .project-description { border-left:1px solid #d6d6d6; padding-left:20px; font-size:16px; color:#696969; line-height:1.34; }
+    .contact .section-description { max-width:530px; }
+    .contact .more-link { margin-top:22px; }
+    .projects, .contact { border-bottom:0; }
+    main { padding-bottom:70px; }
+    @media (min-width:1440px) { .shell { width:min(var(--inner),calc(100% - 96px)); } }
+    @media (max-width:1100px) {
+      .overview { column-gap:58px; }
+      .project { grid-template-columns: 120px minmax(0,1fr); gap:12px; }
+      .project-description { padding-left:13px; }
+      .hero-art { right:calc(50% - 50vw); width:54vw; }
+    }
+    @media (max-width:800px) {
+      .shell { width:calc(100% - 52px); }
+      .header-inner { min-height:65px; }
+      .nav { gap:22px; }
+      .hero { height:auto; min-height:355px; padding:74px 0 50px; }
+      .hero h1 { font-size:clamp(38px,6vw,50px); }
+      .hero { overflow:hidden; }
+      .hero-art { bottom:3px; width:83%; height:200px; right:-26%; opacity:.7; }
+      .hero-art img { height:100%; object-fit:fill; }
+      .hero-description { max-width:520px; }
+      .overview { grid-template-columns:1fr; }
+      .section { min-height:0; padding:32px 0 34px; }
+      .projects,.contact { min-height:0; }
+      .project { grid-template-columns:150px minmax(0,1fr); }
+      main { padding-bottom:30px; }
+    }
+    @media (max-width:520px) {
+      .shell { width:calc(100% - 36px); }
+      .header-inner { min-height:60px; align-items:flex-start; flex-direction:column; gap:14px; padding-block:13px; }
+      .brand { font-size:18px; }
+      .nav { width:100%; justify-content:space-between; gap:10px; }
+      .nav a { font-size:13px; }
+      .hero { min-height:330px; padding-top:57px; padding-bottom:50px; }
+      .hero h1 { font-size:42px; margin-bottom:10px; }
+      .hero-subtitle { font-size:19px; }
+      .hero-stroke { margin:23px 0 19px; }
+      .hero-description { font-size:17px; max-width:315px; line-height:1.5; }
+      .hero-art { height:155px; width:100%; bottom:-28px; right:-43%; opacity:.6; }
+      .section { padding:30px 0 35px; }
+      .section-heading { gap:15px; margin-bottom:20px; }
+      .section-title { font-size:11px; letter-spacing:.16em; }
+      .section-number { font-size:12px; }
+      .section-description { font-size:17px; }
+      .plain-link { font-size:15px; }
+      .projects .section-heading,.contact .section-heading { margin-bottom:22px; }
+      .project { grid-template-columns:120px minmax(0,1fr); gap:10px; }
+      .project-name { font-size:15px; white-space:normal; }
+      .project-description { font-size:14px; padding-left:10px; }
+      .project-list { gap:18px; }
+
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior:auto; } }
+  
+    .explore { margin-top:24px; border-top:1px solid var(--line); min-height:0; }
+    .explore-tools { display:flex; gap:16px; align-items:center; margin:24px 0 18px; }
+    .explore-tools input { min-width:0; width:100%; max-width:480px; padding:11px 13px; border:1px solid var(--line); border-radius:0; font:inherit; color:var(--ink); background:#fff; }
+    .explore-status { color:var(--soft); font-size:15px; }
+    .explore-list { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 48px; }
+    .explore-list li { border-top:1px solid var(--line); }
+    .explore-list a { display:flex; gap:18px; align-items:center; justify-content:space-between; padding:18px 0; font-size:18px; overflow-wrap:anywhere; }
+    .explore-list a:hover { color:#777; }
+    .explore-list small { display:block; color:var(--muted); font-size:13px; margin-top:7px; }
+    .explore-empty { color:var(--soft); line-height:1.6; }
+    @media(max-width:800px) { .explore-list { grid-template-columns:1fr; } }
+    @media(max-width:520px) { .nav { flex-wrap:wrap; } .nav a { font-size:12px; } }
+  
+.explore { margin-top:64px; } .explore h1 { margin:0 0 16px; font-weight:400; font-size:48px; letter-spacing:-.03em; }
+
+.nav a[aria-current="page"] { color:#202020; border-bottom:1px solid #555; padding-bottom:4px; }
+.page-content { max-width:920px; }
+.page-content .section { min-height:0; border-bottom:0; border-top:1px solid var(--line); padding:40px 0; }
+.page-content .section-description { max-width:760px; }
+.page-content .explore { margin-top:0; }
+.page-content .project-list { gap:24px; }
+.page-content .section-heading { margin-bottom:24px; }
+@media(max-width:520px) { .nav { flex-wrap:wrap; } .nav a {font-size:12px;} }
