@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relation Knowledge from Text</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Sans+SC:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout idea: an annotated-corpus notebook. A sticky contents rail on wide screens, a 720px reading column,
+     example sentences marked up like an annotation tool (hypernym / trigger / hyponym), figures allowed to run wider. */
+  --paper:#ffffff;
+  --card:#ffffff;
+  --tint:#f6f8fa;
+  --ink:#142031;
+  --muted:#596579;
+  --rule:#d6dce5;
+  --trigger:#c0185a;
+  --hyper:#08776f;
+  --hypo:#a35f00;
+  --good:#2e7a32;
+  --bad:#c23a2b;
+  --g4:#4b4fae;
+  --display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --body:"IBM Plex Sans", "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --zh:"Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color-scheme: light;
+}
+/* Single light theme by choice: white page in every viewer theme. */
+html,body{background:#ffffff;color-scheme:light}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{transition:none !important} }
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 var(--body);-webkit-font-smoothing:antialiased}
+a{color:var(--hyper);text-underline-offset:2px}
+a:focus-visible, button:focus-visible, textarea:focus-visible{outline:2px solid var(--trigger);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.2;margin:0}
+h1{font-size:clamp(2rem,4.6vw,3rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.7rem;font-weight:600}
+h3{font-size:1.2rem;font-weight:600}
+p{margin:0}
+code,.mono{font-family:var(--mono);font-size:.9em}
+.zh{font-family:var(--zh);color:var(--muted);font-size:.9em;line-height:1.7}
+body.hide-zh .zh{display:none}
+.zh-inline{font-family:var(--zh);color:var(--muted);font-size:.62em;font-weight:400;margin-left:.5em;letter-spacing:0}
+body.hide-zh .zh-inline{display:none}
+
+/* top bar */
+.topbar{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule)}
+.topbar-inner{max-width:1180px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-family:var(--mono);font-size:.82rem;color:var(--muted)}
+.brand b{color:var(--ink);font-weight:500}
+.btn{font:500 .85rem var(--body);color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* frame */
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:56px}
+.toc{position:sticky;top:64px;align-self:start;padding-top:40px;font-size:.86rem}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:6px;counter-reset:t}
+.toc a{color:var(--muted);text-decoration:none;display:block;padding:2px 0 2px 10px;border-left:2px solid var(--rule)}
+.toc a:hover{color:var(--ink);border-left-color:var(--hyper)}
+.toc .zh{display:block;font-size:.8rem}
+main{min-width:0;max-width:780px;padding:40px 0 80px;display:grid;gap:72px}
+@media (max-width:920px){ .wrap{grid-template-columns:minmax(0,1fr);gap:0} .toc{display:none} main{max-width:none} }
+@media (max-width:480px){ .wrap,.topbar-inner{padding-left:16px;padding-right:16px} }
+
+section{display:grid;gap:18px;scroll-margin-top:70px}
+.sec-head{display:grid;gap:6px;border-top:2px solid var(--ink);padding-top:14px}
+.sec-num{font-family:var(--mono);font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.prose{display:grid;gap:10px;max-width:68ch}
+.lead{font-size:1.12rem}
+.sub{display:grid;gap:14px;margin-top:10px}
+.sub > h3{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px}
+
+/* annotation spans */
+.ann{border-radius:3px;padding:.05em .22em;white-space:nowrap}
+.ann.hyper{background:color-mix(in srgb,var(--hyper) 16%,transparent);box-shadow:inset 0 -2px 0 var(--hyper)}
+.ann.hypo{background:color-mix(in srgb,var(--hypo) 18%,transparent);box-shadow:inset 0 -2px 0 var(--hypo)}
+.ann.trigger{color:var(--trigger);font-weight:600;background:color-mix(in srgb,var(--trigger) 10%,transparent)}
+.annot{font-size:1.05rem;line-height:2.1}
+.lbl{position:relative}
+.lbl[data-l]::before{content:attr(data-l);position:absolute;left:0;top:-1.5em;font:500 .62rem/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.lbl.hyper::before{color:var(--hyper)} .lbl.hypo::before{color:var(--hypo)} .lbl.trigger::before{color:var(--trigger)}
+.annot.labeled{line-height:3.1}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.82rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.sw.hyper{background:var(--hyper)} .sw.hypo{background:var(--hypo)} .sw.trigger{background:var(--trigger)}
+
+/* cards and grids */
+.card{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:18px}
+.grid{display:grid;gap:12px}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:640px){ .g3,.g2{grid-template-columns:minmax(0,1fr)} }
+.card h4{margin:0 0 6px;font:600 1rem var(--body)}
+.card .kicker{font:500 .72rem var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.card p + p{margin-top:6px}
+.pat{font-family:var(--mono);font-size:.86rem;background:color-mix(in srgb,var(--ink) 6%,transparent);border-radius:4px;padding:2px 6px;display:inline-block}
+.src{font-size:.8rem;color:var(--muted);margin-top:8px}
+.triple{font-family:var(--mono);font-size:.88rem;display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.triple .t{padding:2px 7px;border-radius:4px;border:1px solid var(--rule);background:var(--card)}
+.triple .t.hyper{border-color:var(--hyper);color:var(--hyper)}
+.triple .t.hypo{border-color:var(--hypo);color:var(--hypo)}
+.triple .rel{color:var(--muted)}
+.ok{color:var(--good);font-weight:600}
+.no{color:var(--bad);font-weight:600}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--rule)}
+th{font:600 .78rem var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--tint)}
+tr:last-child td{border-bottom:0}
+td .zh{display:block;font-size:.82rem}
+
+/* figures */
+figure{margin:0;display:grid;gap:10px}
+figure svg{width:100%;height:auto;display:block;color:var(--ink)}
+.fig-box{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:16px;overflow-x:auto}
+.fig-box.overview{border-top:3px solid var(--hyper)}
+.ov-tag{font:500 .72rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--hyper)}
+svg .f-tint{fill:var(--tint)}
+figcaption{font-size:.86rem;color:var(--muted);max-width:72ch}
+figcaption .zh{display:block;font-size:.82rem}
+svg .f-hyper{fill:var(--hyper)} svg .f-hypo{fill:var(--hypo)} svg .f-trigger{fill:var(--trigger)} svg .f-muted{fill:var(--muted)}
+svg .f-good{fill:var(--good)} svg .f-bad{fill:var(--bad)} svg .f-card{fill:var(--card)} svg .f-paper{fill:var(--paper)}
+svg .s-hyper{stroke:var(--hyper)} svg .s-trigger{stroke:var(--trigger)} svg .s-muted{stroke:var(--muted)} svg .s-rule{stroke:var(--rule)} svg .s-bad{stroke:var(--bad)} svg .s-good{stroke:var(--good)} svg .s-hypo{stroke:var(--hypo)}
+svg text{font-family:var(--body);fill:currentColor}
+svg .mono{font-family:var(--mono)}
+svg .zh-svg{font-family:var(--zh);fill:var(--muted)}
+body.hide-zh svg .zh-svg{display:none}
+
+/* hero */
+.hero{display:grid;gap:18px;padding-top:8px}
+.eyebrow{font:500 .78rem var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.hero-ex{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:26px 22px 18px;display:grid;gap:16px}
+.hero-ex .annot{font-size:1.25rem}
+.arrow-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:.9rem;color:var(--muted)}
+
+/* matcher */
+.matcher{display:grid;gap:14px}
+.ex-btns{display:flex;flex-wrap:wrap;gap:8px}
+.ex-btns .btn{font-size:.8rem;padding:5px 10px}
+.ex-btns .btn.tricky{border-style:dashed}
+textarea{width:100%;min-height:72px;resize:vertical;font:1rem/1.5 var(--body);color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:12px}
+.out{display:grid;gap:12px}
+.out .annot{font-size:1.05rem}
+.res-list{display:grid;gap:8px}
+.res{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.chip{font:500 .72rem var(--mono);border:1px solid var(--rule);border-radius:999px;padding:2px 8px;color:var(--muted)}
+.note{border-left:3px solid var(--bad);padding:6px 12px;background:color-mix(in srgb,var(--bad) 7%,transparent);border-radius:0 6px 6px 0;font-size:.9rem}
+.note.good{border-left-color:var(--good);background:color-mix(in srgb,var(--good) 7%,transparent)}
+.small{font-size:.82rem;color:var(--muted)}
+
+/* matrix */
+.mx{border-collapse:separate;border-spacing:4px;width:auto;font-family:var(--mono);font-size:.85rem}
+.mx th{background:none;text-transform:none;letter-spacing:0;font:500 .8rem var(--mono);color:var(--muted);border:0;padding:4px 8px;text-align:center}
+.mx th.row{text-align:right;vertical-align:middle}
+.mx td{border:0;width:78px;height:42px;text-align:center;vertical-align:middle;border-radius:5px;font-variant-numeric:tabular-nums;padding:0}
+.mx td.filled{outline:2px solid var(--trigger);outline-offset:-2px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:7px;overflow:hidden}
+.seg .btn{border:0;border-radius:0}
+
+/* timeline list */
+.tl{display:grid;gap:0;border-left:2px solid var(--rule);margin-left:8px}
+.tl-item{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:8px 0 8px 16px;position:relative}
+.tl-item::before{content:"";position:absolute;left:-7px;top:15px;width:12px;height:12px;border-radius:50%;background:var(--paper);border:2px solid var(--era,var(--muted))}
+.tl-year{font:500 .85rem var(--mono);color:var(--muted);padding-top:2px}
+.tl-item b{font-weight:600}
+
+/* problems */
+.prob{display:grid;gap:8px}
+.prob .x{font-size:.9rem;border-left:3px solid var(--bad);padding-left:10px}
+.prob .fix{font-size:.9rem;border-left:3px solid var(--good);padding-left:10px}
+.prob .zh,.map-row .zh,#mx-note .zh{display:block;margin-top:2px}
+.prompt-lines{display:grid;gap:6px;font-family:var(--mono);font-size:.85rem}
+.tag{font:500 .7rem var(--mono);letter-spacing:.05em;text-transform:uppercase}
+.tag.bad{color:var(--bad)} .tag.good{color:var(--good)}
+
+/* mapping */
+.map{display:grid;gap:8px}
+.map-row{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr) minmax(0,.8fr);gap:10px;align-items:center;background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;font-size:.92rem}
+.map-row .arr{color:var(--trigger);font-weight:700;text-align:center}
+.map-row .who{font-size:.82rem;color:var(--muted)}
+.map-head{background:none;border:0;padding:0 14px;font:600 .74rem var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+@media (max-width:640px){ .map-row{grid-template-columns:minmax(0,1fr)} .map-row .arr{text-align:left} .map-head{display:none} }
+
+/* news cards */
+.venue{font:500 .7rem var(--mono);color:var(--hyper);border:1px solid var(--hyper);border-radius:4px;padding:1px 6px;margin-left:6px;white-space:nowrap}
+.news{display:grid;gap:10px}
+.news .card{display:grid;gap:6px}
+.news .card h4{margin:0}
+.kv{font-family:var(--mono);font-size:.82rem;color:var(--trigger)}
+
+/* reading list */
+.reading{display:grid;gap:18px}
+.reading ol{margin:0;padding-left:1.4em;display:grid;gap:6px}
+.reading li{padding-left:4px}
+.reading .yr{font-family:var(--mono);font-size:.82rem;color:var(--muted)}
+footer{border-top:1px solid var(--rule);padding:24px 0 48px;font-size:.82rem;color:var(--muted);display:grid;gap:6px}
+.hero-sub{font-family:var(--display);font-size:1.45rem;color:var(--muted);margin-top:-8px}
+.thesis{border-left:4px solid var(--trigger);padding:12px 16px;background:var(--tint);border-radius:0 8px 8px 0;display:grid;gap:6px;max-width:72ch}
+.thesis .kicker,.hero-ex .kicker{font:500 .72rem var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.part{border:1px solid var(--rule);border-left:6px solid var(--gc);border-radius:8px;padding:18px 20px;background:var(--tint);display:grid;gap:6px}
+.part .kicker{font:500 .74rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--gc)}
+.part-title{font-size:2rem;font-weight:700}
+.part.pg1{--gc:var(--trigger)} .part.pg2{--gc:var(--hypo)} .part.pg3{--gc:var(--hyper)} .part.pg4{--gc:var(--g4)}
+.toc .toc-part{font:500 .68rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+svg .f-g1{fill:var(--trigger)} svg .f-g2{fill:var(--hypo)} svg .f-g3{fill:var(--hyper)} svg .f-g4{fill:var(--g4)}
+svg .s-g1{stroke:var(--trigger)} svg .s-g2{stroke:var(--hypo)} svg .s-g3{stroke:var(--hyper)} svg .s-g4{stroke:var(--g4)}
+.gen-tag{font:600 .72rem var(--mono);padding:1px 7px;border-radius:4px;color:#fff;white-space:nowrap}
+.gen-tag.g1{background:var(--trigger)} .gen-tag.g2{background:var(--hypo)} .gen-tag.g3{background:var(--hyper)} .gen-tag.g4{background:var(--g4)}
+
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><b>Relation Knowledge from Text</b> · from patterns to LLMs, 1992–2026</div>
+    <button class="btn" id="zh-toggle" type="button" aria-pressed="true">中文辅助 On</button>
+  </div>
+</header>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <ol>
+    <li><a href="#overview">0 · The big picture<span class="zh">全景图</span></a></li>
+    <li><a href="#task">1 · The task<span class="zh">任务是什么</span></a></li>
+    <li><a href="#gens">2 · Four generations<span class="zh">四代方法总览</span></a></li>
+    <li class="toc-part">Gen 1 · Patterns</li>
+    <li><a href="#idea">3 · The pattern idea<span class="zh">模板思想</span></a></li>
+    <li><a href="#try">4 · Try the matcher<span class="zh">动手匹配</span></a></li>
+    <li><a href="#classic">5 · Classic patterns<span class="zh">经典模板</span></a></li>
+    <li><a href="#learning">6 · Learning patterns<span class="zh">自动学习模板</span></a></li>
+    <li class="toc-part">Gen 2 · Statistical &amp; neural</li>
+    <li><a href="#gen2">7 · Learning from data<span class="zh">从数据中学习</span></a></li>
+    <li class="toc-part">Gen 3 · Pretrained LMs</li>
+    <li><a href="#gen3">8 · Pretrained models<span class="zh">预训练语言模型</span></a></li>
+    <li class="toc-part">Gen 4 · LLMs</li>
+    <li><a href="#latest">9 · LLMs, 2023–2026<span class="zh">大模型</span></a></li>
+    <li class="toc-part">Across generations</li>
+    <li><a href="#problems">10 · Problems that persist<span class="zh">贯穿各代的问题</span></a></li>
+    <li><a href="#trends">11 · Old problems, new forms<span class="zh">老问题的新形式</span></a></li>
+    <li><a href="#reading">12 · Reading list<span class="zh">阅读清单</span></a></li>
+  </ol>
+</nav>
+
+
+<main>
+<!-- HERO -->
+<section class="hero" aria-labelledby="title">
+  <div class="eyebrow">Relation extraction · taxonomy induction · 1992 → 2026</div>
+  <h1 id="title">Relation Knowledge from Text</h1>
+  <p class="hero-sub">From patterns to large language models</p>
+  <p class="zh" style="font-size:1.05rem">从文本获取关系知识：从模板到大模型</p>
+  <div class="prose">
+    <p class="lead">Text states facts like “a Bambara ndang is a kind of bow lute” all the time. Turning such statements into relation knowledge, triples of the form (x, relation, y) that make up taxonomies and knowledge graphs, is one of the oldest tasks in NLP. Four generations of methods have tackled it. Lexico-syntactic patterns, starting with Hearst (1992), were the first.</p>
+    <p class="zh">文本里时时刻刻在陈述“Bambara ndang 是一种弓形琉特琴”这样的事实。把这些陈述变成关系知识，也就是构成分类体系和知识图谱的 (x, 关系, y) 三元组，是 NLP 最古老的任务之一。先后有四代方法来解决它，从 Hearst (1992) 开始的词汇-句法模板是第一代。</p>
+  </div>
+  <div class="hero-ex">
+    <div class="kicker">The task in one line · 一句话说明任务</div>
+    <p class="annot labeled">The <span class="ann hyper lbl" data-l="hypernym">bow lute</span>, <span class="ann trigger lbl" data-l="trigger">such as</span> the <span class="ann hypo lbl" data-l="hyponym">Bambara ndang</span>, is plucked …</p>
+    <div class="arrow-row">
+      <span>sentence</span><span aria-hidden="true">→</span>
+      <span class="triple"><span class="t hypo">Bambara ndang</span><span class="rel">is-a</span><span class="t hyper">bow lute</span></span>
+      <span aria-hidden="true">→</span><span>one edge of a taxonomy</span>
+    </div>
+    <div class="legend">
+      <span><i class="sw hyper"></i>hypernym (category) <span class="zh-inline" style="font-size:.95em;margin-left:2px">上位词</span></span>
+      <span><i class="sw trigger"></i>trigger <span class="zh-inline" style="font-size:.95em;margin-left:2px">触发结构</span></span>
+      <span><i class="sw hypo"></i>hyponym (member) <span class="zh-inline" style="font-size:.95em;margin-left:2px">下位词</span></span>
+    </div>
+    <p class="small">A first-generation method reads the relation off the highlighted structure. Later generations learn it from data or ask a language model. Example from Hearst (1992).</p>
+    <p class="zh">第一代方法直接从高亮的结构中读出关系；后几代方法从数据中学习，或者去问语言模型。例子出自 Hearst (1992)。</p>
+  </div>
+  <div class="thesis">
+    <div class="kicker">Main line of this page · 本页主线</div>
+    <p>Every generation trades precision against coverage, and the same failures (sparsity, drift, paraphrase, ambiguity) return in each one in a new form. Patterns never disappeared: later generations absorbed them as features, prompts and rules.</p>
+    <p class="zh">每一代方法都在精度与覆盖之间取舍，稀疏、漂移、改写、歧义这些问题在每一代都以新的形式重现。模板也从未消失，后来的方法把它吸收成了特征、prompt 和规则。</p>
+  </div>
+</section>
+
+<!-- 0 OVERVIEW -->
+<section id="overview" aria-labelledby="h-ov">
+  <div class="sec-head">
+    <div class="sec-num">OVERVIEW</div>
+    <h2 id="h-ov">The big picture <span class="zh-inline">全景图</span></h2>
+  </div>
+  <div class="prose">
+    <p>The whole page on one diagram. Read it top to bottom; each box names the section with the details.</p>
+    <p class="zh">用一张图看全部内容。从上往下读，每个方框都标出了详细讲解它的章节。</p>
+  </div>
+  <figure>
+    <div class="fig-box overview">
+      <svg viewBox="0 0 800 400" role="img" aria-label="Overview. The task turns raw text into relation knowledge. Four generations of methods implement it: patterns, learned models, pretrained language models and large language models. Patterns appear in every generation in a different role. The same problems persist across all four.">
+        <defs>
+          <marker id="ar0" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        </defs>
+        <g font-size="13">
+          <rect x="10" y="8" width="780" height="74" rx="9" class="f-tint" stroke="currentColor" stroke-width="1.2"/>
+          <text x="24" y="36" font-weight="600">The task · §1</text>
+          <text x="24" y="54" font-size="10.5" class="zh-svg">任务：从文本获取关系知识</text>
+          <rect x="230" y="18" width="170" height="54" rx="8" class="f-card s-rule" stroke-width="1.5"/>
+          <text x="315" y="41" text-anchor="middle" font-weight="600">Raw text</text>
+          <text x="315" y="59" text-anchor="middle" font-size="10.5" class="f-muted">“fruits such as apples”</text>
+          <line x1="400" y1="45" x2="556" y2="45" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar0)"/>
+          <text x="478" y="37" text-anchor="middle" font-size="10.5" font-style="italic" class="f-muted">four generations of methods</text>
+          <rect x="560" y="18" width="220" height="54" rx="8" class="f-card s-hyper" stroke-width="1.8"/>
+          <text x="670" y="41" text-anchor="middle" font-weight="600" class="f-hyper">Relation knowledge</text>
+          <text x="670" y="59" text-anchor="middle" font-size="10.5" class="f-muted">triples · taxonomies · KGs</text>
+
+          <g stroke="currentColor" stroke-width="1.1">
+            <line x1="478" y1="82" x2="478" y2="92"/><line x1="101" y1="92" x2="698" y2="92"/>
+            <line x1="101" y1="92" x2="101" y2="104"/><line x1="300" y1="92" x2="300" y2="104"/><line x1="499" y1="92" x2="499" y2="104"/><line x1="698" y1="92" x2="698" y2="104"/>
+          </g>
+
+          <g text-anchor="middle">
+            <rect x="10" y="104" width="182" height="96" rx="8" class="f-card s-g1" stroke-width="1.8"/><rect x="10" y="104" width="182" height="6" rx="3" class="f-g1"/>
+            <text x="101" y="130" font-size="12.5" font-weight="600" class="f-g1">Gen 1 · Patterns</text>
+            <text x="101" y="147" font-size="10" class="mono f-muted">1992–  ·  §3–6</text>
+            <text x="101" y="166" font-size="11">match surface structure</text>
+            <text x="101" y="184" font-size="10" class="zh-svg">第一代：模板</text>
+
+            <rect x="209" y="104" width="182" height="96" rx="8" class="f-card s-g2" stroke-width="1.8"/><rect x="209" y="104" width="182" height="6" rx="3" class="f-g2"/>
+            <text x="300" y="130" font-size="12.5" font-weight="600" class="f-g2">Gen 2 · Learned models</text>
+            <text x="300" y="147" font-size="10" class="mono f-muted">2005–  ·  §7</text>
+            <text x="300" y="166" font-size="11">train on KB-labeled data</text>
+            <text x="300" y="184" font-size="10" class="zh-svg">第二代：统计与神经学习</text>
+
+            <rect x="408" y="104" width="182" height="96" rx="8" class="f-card s-g3" stroke-width="1.8"/><rect x="408" y="104" width="182" height="6" rx="3" class="f-g3"/>
+            <text x="499" y="130" font-size="12.5" font-weight="600" class="f-g3">Gen 3 · Pretrained LMs</text>
+            <text x="499" y="147" font-size="10" class="mono f-muted">2019–  ·  §8</text>
+            <text x="499" y="166" font-size="11">fine-tune or prompt</text>
+            <text x="499" y="184" font-size="10" class="zh-svg">第三代：预训练语言模型</text>
+
+            <rect x="607" y="104" width="182" height="96" rx="8" class="f-card s-g4" stroke-width="1.8"/><rect x="607" y="104" width="182" height="6" rx="3" class="f-g4"/>
+            <text x="698" y="130" font-size="12.5" font-weight="600" class="f-g4">Gen 4 · LLMs</text>
+            <text x="698" y="147" font-size="10" class="mono f-muted">2023–  ·  §9</text>
+            <text x="698" y="166" font-size="11">generate whole structures</text>
+            <text x="698" y="184" font-size="10" class="zh-svg">第四代：大模型</text>
+          </g>
+          <g stroke="currentColor" stroke-width="1.4">
+            <line x1="192" y1="152" x2="205" y2="152" marker-end="url(#ar0)"/><line x1="391" y1="152" x2="404" y2="152" marker-end="url(#ar0)"/><line x1="590" y1="152" x2="603" y2="152" marker-end="url(#ar0)"/>
+          </g>
+
+          <text x="10" y="226" font-size="11.5" font-weight="600" class="f-trigger">Where patterns sit in each generation</text>
+          <text x="258" y="226" font-size="10.5" class="zh-svg">模板在各代中的角色</text>
+          <g font-size="11" text-anchor="middle" class="f-trigger">
+            <rect x="26" y="236" width="150" height="26" rx="13" class="f-tint s-trigger" stroke-width="1.2"/><text x="101" y="253">the extractor itself</text>
+            <rect x="225" y="236" width="150" height="26" rx="13" class="f-tint s-trigger" stroke-width="1.2"/><text x="300" y="253">features &amp; supervision</text>
+            <rect x="424" y="236" width="150" height="26" rx="13" class="f-tint s-trigger" stroke-width="1.2"/><text x="499" y="253">prompts &amp; probes</text>
+            <rect x="623" y="236" width="150" height="26" rx="13" class="f-tint s-trigger" stroke-width="1.2"/><text x="698" y="253">rules written by LLMs</text>
+          </g>
+
+          <rect x="10" y="282" width="780" height="108" rx="8" class="f-card s-bad" stroke-width="1.2" stroke-dasharray="5 4"/>
+          <text x="22" y="303" font-size="12" font-weight="600" class="f-bad">Problems that persist · §10–11</text>
+          <text x="236" y="303" font-size="10.5" class="zh-svg">贯穿各代的问题</text>
+          <g font-size="11" text-anchor="middle" class="f-bad">
+            <rect x="22" y="316" width="150" height="24" rx="12" class="f-card s-bad" stroke-width="1.2"/><text x="97" y="332">precision vs coverage</text>
+            <rect x="184" y="316" width="145" height="24" rx="12" class="f-card s-bad" stroke-width="1.2"/><text x="256.5" y="332">sparsity → long tail</text>
+            <rect x="341" y="316" width="185" height="24" rx="12" class="f-card s-bad" stroke-width="1.2"/><text x="433.5" y="332">drift → hallucinated nodes</text>
+            <rect x="22" y="350" width="215" height="24" rx="12" class="f-card s-bad" stroke-width="1.2"/><text x="129.5" y="366">paraphrase → prompt sensitivity</text>
+            <rect x="249" y="350" width="140" height="24" rx="12" class="f-card s-bad" stroke-width="1.2"/><text x="319" y="366">ambiguity &amp; context</text>
+            <rect x="401" y="350" width="160" height="24" rx="12" class="f-card s-bad" stroke-width="1.2"/><text x="481" y="366">trustworthy evaluation</text>
+          </g>
+          <g font-size="11" class="f-muted" font-style="italic">
+            <text x="600" y="330">same problems,</text><text x="600" y="346">a new form in each</text><text x="600" y="362">generation</text>
+          </g>
+          <text x="600" y="380" font-size="10" class="zh-svg">同样的问题，每代换一种形式</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>Top: the task. Middle: four generations, each a different way to implement the arrow, and the role patterns play in each. Bottom: the problems no generation has escaped.
+      <span class="zh">上层是任务；中层是四代方法，各自用不同的方式实现那条箭头，以及模板在每一代中的角色；下层是没有哪一代能摆脱的问题。</span></figcaption>
+  </figure>
+</section>
+
+<!-- 1 TASK -->
+<section id="task" aria-labelledby="h-task">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 1</div>
+    <h2 id="h-task">The task <span class="zh-inline">任务是什么</span></h2>
+  </div>
+  <div class="prose">
+    <p><b>Relation knowledge</b> is a set of facts of the form (x, relation, y): is-a links that form a taxonomy, part-whole links, attributes, causal links, or any relation in a knowledge graph. The task is to obtain these facts from text, at scale, with as little hand-labeled data as possible.</p>
+    <p class="zh">关系知识是一组 (x, 关系, y) 形式的事实：构成分类体系的上下位链接、部分-整体链接、属性、因果，或知识图谱中的任意关系。任务是从文本中大规模地获取这些事实，并尽量少用人工标注数据。</p>
+  </div>
+  <figure>
+    <div class="fig-box overview">
+      <svg viewBox="0 0 760 328" role="img" aria-label="Relation types covered on this page: is-a, part-whole, adjective polarity, synonym versus antonym, verb relations, attributes, causality, comparison and open relations, each with a typical trigger.">
+        <g class="s-rule" stroke-width="1.2">
+          <line x1="380" y1="170" x2="572.8" y2="70.4"/><line x1="380" y1="170" x2="675.4" y2="147.4"/>
+          <line x1="380" y1="170" x2="639.8" y2="235"/><line x1="380" y1="170" x2="482.6" y2="292.2"/>
+          <line x1="380" y1="170" x2="277.4" y2="292.2"/><line x1="380" y1="170" x2="120.2" y2="235"/>
+          <line x1="380" y1="170" x2="84.6" y2="147.4"/><line x1="380" y1="170" x2="187.2" y2="70.4"/>
+        </g>
+        <line x1="380" y1="170" x2="380" y2="40" class="s-trigger" stroke-width="2.2"/>
+        <ellipse cx="380" cy="170" rx="112" ry="36" class="f-tint s-hyper" stroke-width="1.8"/>
+        <text x="380" y="168" text-anchor="middle" font-size="12.5" font-weight="600">Relation types</text>
+        <text x="380" y="186" text-anchor="middle" font-size="10.5" class="zh-svg">关系类型</text>
+        <g font-size="12" text-anchor="middle">
+          <rect x="305" y="12" width="150" height="56" rx="8" class="f-card s-trigger" stroke-width="1.8"/>
+          <text x="380" y="31" font-weight="600" class="f-trigger">Is-a · main example</text><text x="380" y="45" font-size="10" class="zh-svg">上下位</text><text x="380" y="60" font-size="10.5" class="mono">such as · and other</text>
+
+          <rect x="497.8" y="42.4" width="150" height="56" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+          <text x="572.8" y="61.4" font-weight="600">Part–whole</text><text x="572.8" y="75.4" font-size="10" class="zh-svg">部分-整体</text><text x="572.8" y="90.4" font-size="10.5" class="mono f-muted">'s · part of</text>
+
+          <rect x="600.4" y="119.4" width="150" height="56" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+          <text x="675.4" y="138.4" font-weight="600">Polarity</text><text x="675.4" y="152.4" font-size="10" class="zh-svg">形容词极性</text><text x="675.4" y="167.4" font-size="10.5" class="mono f-muted">X and Y · X but Y</text>
+
+          <rect x="564.8" y="207" width="150" height="56" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+          <text x="639.8" y="226" font-weight="600">Synonym vs antonym</text><text x="639.8" y="240" font-size="10" class="zh-svg">同义与反义</text><text x="639.8" y="255" font-size="10.5" class="mono f-muted">from X to Y</text>
+
+          <rect x="407.6" y="264.2" width="150" height="56" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+          <text x="482.6" y="283.2" font-weight="600">Verb relations</text><text x="482.6" y="297.2" font-size="10" class="zh-svg">动词间关系</text><text x="482.6" y="312.2" font-size="10.5" class="mono f-muted">and then · not only</text>
+
+          <rect x="202.4" y="264.2" width="150" height="56" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+          <text x="277.4" y="283.2" font-weight="600">Attributes</text><text x="277.4" y="297.2" font-size="10" class="zh-svg">属性</text><text x="277.4" y="312.2" font-size="10.5" class="mono f-muted">the * of the C is</text>
+
+          <rect x="45.2" y="207" width="150" height="56" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+          <text x="120.2" y="226" font-weight="600">Causality</text><text x="120.2" y="240" font-size="10" class="zh-svg">因果</text><text x="120.2" y="255" font-size="10.5" class="mono f-muted">X causes Y</text>
+
+          <rect x="9.6" y="119.4" width="150" height="56" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+          <text x="84.6" y="138.4" font-weight="600">Comparison</text><text x="84.6" y="152.4" font-size="10" class="zh-svg">比较</text><text x="84.6" y="167.4" font-size="10.5" class="mono f-muted">X outperforms Y</text>
+
+          <rect x="112.2" y="42.4" width="150" height="56" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+          <text x="187.2" y="61.4" font-weight="600">Open relations</text><text x="187.2" y="75.4" font-size="10" class="zh-svg">开放关系</text><text x="187.2" y="90.4" font-size="10.5" class="mono f-muted">V | V P | V W* P</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><span class="ov-tag">Overview</span> Relation types covered on this page. The mono line in each node is a typical surface cue used by first-generation methods; is-a is the running example.
+      <span class="zh">总览：本页涉及的关系类型。每个节点里的等宽文字是第一代方法常用的典型表层线索；上下位关系是贯穿全文的例子。</span></figcaption>
+  </figure>
+
+  <div class="sub">
+    <h3>Task variants <span class="zh-inline">任务变体</span></h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Task</th><th>Input → output</th><th>Typical evaluation</th></tr></thead>
+        <tbody>
+          <tr><td><b>Hypernym detection</b><span class="zh">上位词检测</span></td><td>word pair → is it is-a?</td><td>BLESS, EVALution, LEDS, WBLESS, BIBLESS</td></tr>
+          <tr><td><b>Hypernym discovery</b><span class="zh">上位词发现</span></td><td>one term → ranked list of hypernyms</td><td>SemEval-2018 Task 9</td></tr>
+          <tr><td><b>Taxonomy induction</b><span class="zh">分类体系构建</span></td><td>set of terms → tree or DAG</td><td>SemEval-2015 Task 17, SemEval-2016 Task 13</td></tr>
+          <tr><td><b>Taxonomy expansion</b><span class="zh">分类体系扩展</span></td><td>taxonomy + new term → where to attach it</td><td>SemEval-2016 Task 14</td></tr>
+          <tr><td><b>Relation extraction</b><span class="zh">关系抽取</span></td><td>sentence + entity pair → relation label</td><td>SemEval-2010 Task 8, TACRED</td></tr>
+          <tr><td><b>Open IE</b><span class="zh">开放信息抽取</span></td><td>sentence → (arg1, relation phrase, arg2)</td><td>OIE2016, CaRB</td></tr>
+          <tr><td><b>Ontology learning</b><span class="zh">本体学习</span></td><td>domain text → terms, types, taxonomy, relations</td><td>LLMs4OL</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>This page uses is-a knowledge as its running example, because every generation has been tested on it, and widens to other relations where the methods do.</p>
+      <p class="zh">本页以上下位知识作为贯穿全文的例子，因为每一代方法都在它上面检验过；在方法本身扩展到其他关系的地方，本页也随之扩展。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2 GENERATIONS -->
+<section id="gens" aria-labelledby="h-gens">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 2</div>
+    <h2 id="h-gens">Four generations at a glance <span class="zh-inline">四代方法总览</span></h2>
+  </div>
+  <div class="prose">
+    <p>The generations overlap in time. Each keeps the task, changes the tool, and fixes the weakness that limited the one before.</p>
+    <p class="zh">四代方法在时间上相互重叠。每一代都保留同一个任务、换一种工具，并修补限制前一代的弱点。</p>
+  </div>
+  <figure>
+    <div class="fig-box overview">
+      <svg viewBox="0 0 790 240" role="img" aria-label="Timeline: generation 1 patterns from 1992, generation 2 learned models from 2005, generation 3 pretrained language models from 2019, generation 4 large language models from 2023. Patterns live on in later generations as features, prompts and rules.">
+        <g font-size="12">
+          <text x="160" y="26" text-anchor="end" font-weight="600" class="f-g1">Gen 1</text>
+          <text x="160" y="40" text-anchor="end" font-size="10.5" class="f-muted">patterns</text>
+          <text x="160" y="53" text-anchor="end" font-size="10" class="zh-svg">模板</text>
+          <rect x="201.7" y="18" width="380" height="22" rx="4" class="f-g1"/>
+          <text x="391.7" y="33" text-anchor="middle" font-size="10.5" class="mono f-paper">Hearst · DIPRE · Snowball · Espresso · ReVerb</text>
+          <line x1="581.7" y1="29" x2="740" y2="29" class="s-g1" stroke-width="2" stroke-dasharray="4 3"/>
+          <text x="661" y="54" text-anchor="middle" font-size="10" class="f-muted">lives on as features, prompts, rules</text>
+
+          <text x="160" y="76" text-anchor="end" font-weight="600" class="f-g2">Gen 2</text>
+          <text x="160" y="90" text-anchor="end" font-size="10.5" class="f-muted">statistical &amp; neural</text>
+          <text x="160" y="103" text-anchor="end" font-size="10" class="zh-svg">统计与神经学习</text>
+          <rect x="407.5" y="68" width="237.5" height="22" rx="4" class="f-g2"/>
+          <text x="526.2" y="83" text-anchor="middle" font-size="10.5" class="mono f-paper">Snow · Mintz · HypeNET · Roller</text>
+
+          <text x="160" y="126" text-anchor="end" font-weight="600" class="f-g3">Gen 3</text>
+          <text x="160" y="140" text-anchor="end" font-size="10.5" class="f-muted">pretrained LMs</text>
+          <text x="160" y="153" text-anchor="end" font-size="10" class="zh-svg">预训练语言模型</text>
+          <rect x="629.2" y="118" width="79.1" height="22" rx="4" class="f-g3"/>
+          <text x="623" y="133" text-anchor="end" font-size="10.5" class="mono">Matching the Blanks · LAMA · ParaRel</text>
+
+          <text x="160" y="176" text-anchor="end" font-weight="600" class="f-g4">Gen 4</text>
+          <text x="160" y="190" text-anchor="end" font-size="10.5" class="f-muted">large language models</text>
+          <text x="160" y="203" text-anchor="end" font-size="10" class="zh-svg">大模型</text>
+          <rect x="692.5" y="168" width="47.5" height="22" rx="4" class="f-g4"/>
+          <text x="686" y="183" text-anchor="end" font-size="10.5" class="mono">TaxoLLaMA · Chain-of-Layer · KGGen</text>
+
+          <line x1="170" y1="216" x2="740" y2="216" stroke="currentColor" stroke-width="1"/>
+          <g font-size="10.5" class="mono" text-anchor="middle">
+            <line x1="170" y1="212" x2="170" y2="220" stroke="currentColor"/><text x="170" y="234">1990</text>
+            <line x1="328.3" y1="212" x2="328.3" y2="220" stroke="currentColor"/><text x="328.3" y="234">2000</text>
+            <line x1="486.7" y1="212" x2="486.7" y2="220" stroke="currentColor"/><text x="486.7" y="234">2010</text>
+            <line x1="645" y1="212" x2="645" y2="220" stroke="currentColor"/><text x="645" y="234">2020</text>
+            <line x1="740" y1="212" x2="740" y2="220" stroke="currentColor"/><text x="740" y="234">2026</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <figcaption><span class="ov-tag">Overview</span> When each generation was active. The dashed line marks patterns surviving inside later generations.
+      <span class="zh">总览：各代方法活跃的时间。虚线表示模板在后几代方法中继续存在。</span></figcaption>
+  </figure>
+
+  <figure>
+    <div class="fig-box overview">
+      <svg viewBox="0 0 800 128" role="img" aria-label="Why each generation came next: patterns had low recall and were built by hand; learned models needed labeled data for every relation; pretrained-model prompts handle one fact at a time and are sensitive to wording.">
+        <defs>
+          <marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        </defs>
+        <g text-anchor="middle">
+          <rect x="10" y="14" width="150" height="64" rx="8" class="f-card s-g1" stroke-width="1.8"/>
+          <text x="85" y="35" font-size="12.5" font-weight="600" class="f-g1">Gen 1 · 1992–</text><text x="85" y="52" font-size="11.5">patterns</text><text x="85" y="69" font-size="10" class="zh-svg">第一代：模板</text>
+          <rect x="220" y="14" width="150" height="64" rx="8" class="f-card s-g2" stroke-width="1.8"/>
+          <text x="295" y="35" font-size="12.5" font-weight="600" class="f-g2">Gen 2 · 2005–</text><text x="295" y="52" font-size="11.5">learned models</text><text x="295" y="69" font-size="10" class="zh-svg">第二代：统计与神经学习</text>
+          <rect x="430" y="14" width="150" height="64" rx="8" class="f-card s-g3" stroke-width="1.8"/>
+          <text x="505" y="35" font-size="12.5" font-weight="600" class="f-g3">Gen 3 · 2019–</text><text x="505" y="52" font-size="11.5">pretrained LMs</text><text x="505" y="69" font-size="10" class="zh-svg">第三代：预训练语言模型</text>
+          <rect x="640" y="14" width="150" height="64" rx="8" class="f-card s-g4" stroke-width="1.8"/>
+          <text x="715" y="35" font-size="12.5" font-weight="600" class="f-g4">Gen 4 · 2023–</text><text x="715" y="52" font-size="11.5">LLMs</text><text x="715" y="69" font-size="10" class="zh-svg">第四代：大模型</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.5">
+          <line x1="160" y1="46" x2="216" y2="46" marker-end="url(#ar7)"/><line x1="370" y1="46" x2="426" y2="46" marker-end="url(#ar7)"/><line x1="580" y1="46" x2="636" y2="46" marker-end="url(#ar7)"/>
+        </g>
+        <g font-size="10.5" text-anchor="middle" class="f-bad">
+          <text x="190" y="100">low recall,</text><text x="190" y="114">hand-built patterns</text>
+          <text x="400" y="100">labeled data</text><text x="400" y="114">for every relation</text>
+          <text x="610" y="100">one fact per prompt,</text><text x="610" y="114">wording-sensitive</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><span class="ov-tag">Overview</span> Why each generation came next. Red labels name the weakness that pushed the field forward.
+      <span class="zh">总览：每一代为什么会出现。红色标签是推动进入下一代的弱点。</span></figcaption>
+  </figure>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Generation</th><th>How relations are obtained</th><th>Supervision</th><th>Strength</th><th>Typical failure</th></tr></thead>
+      <tbody>
+        <tr><td><span class="gen-tag g1">Gen 1</span><br>Patterns</td><td>Match fixed surface structures<span class="zh">匹配固定的表层结构</span></td><td>None, or a few seed pairs<span class="zh">不需要，或少量种子</span></td><td>Precise, transparent, cheap<span class="zh">精确、透明、便宜</span></td><td>Low recall; drift when patterns are learned<span class="zh">召回低；自动学模板时会漂移</span></td></tr>
+        <tr><td><span class="gen-tag g2">Gen 2</span><br>Learned models</td><td>Train classifiers on features and embeddings<span class="zh">在特征和词向量上训练分类器</span></td><td>Knowledge-base-aligned or annotated data<span class="zh">知识库对齐数据或人工标注</span></td><td>Higher recall, many cues at once<span class="zh">召回更高，同时利用多种线索</span></td><td>Noisy distant labels; data for each relation; lexical memorization<span class="zh">远程标签有噪声；每种关系都要数据；词汇记忆</span></td></tr>
+        <tr><td><span class="gen-tag g3">Gen 3</span><br>Pretrained LMs</td><td>Fine-tune or prompt pretrained models<span class="zh">微调或 prompt 预训练模型</span></td><td>Small labeled sets, or none for prompting<span class="zh">少量标注，prompt 时不需要</span></td><td>Transfer across relations and domains<span class="zh">可跨关系、跨领域迁移</span></td><td>Sensitive to wording; unclear what the model knows<span class="zh">对措辞敏感；难以判断模型真正知道什么</span></td></tr>
+        <tr><td><span class="gen-tag g4">Gen 4</span><br>LLMs</td><td>Generate pairs, taxonomies and graphs directly<span class="zh">直接生成词对、分类体系和图谱</span></td><td>None to a few examples; optional fine-tuning<span class="zh">零样本到少样本，可选微调</span></td><td>Open-ended output, whole structures at once<span class="zh">输出开放，可一次生成整体结构</span></td><td>Unrelated nodes; weak on specialized and leaf concepts; few non-taxonomic relations<span class="zh">混入无关节点；专业领域和叶子概念弱；非分类关系少</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="part pg1" role="note">
+  <div class="kicker">Part I · Generation 1 · 1992–</div>
+  <h2 class="part-title">Patterns</h2>
+  <p>Relations are read off fixed surface structures, written by hand or grown from seeds. Sections 3–6.</p>
+  <p class="zh">第一部分 · 第一代：模板。从固定的表层结构中读出关系，模板由人工编写或从种子自动扩展。第 3–6 节。</p>
+</div>
+
+
+<!-- 1 CORE IDEA -->
+<section id="idea" aria-labelledby="h-idea">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 3 · GEN 1</div>
+    <h2 id="h-idea">The pattern idea <span class="zh-inline">模板思想</span></h2>
+  </div>
+  <div class="prose">
+    <p>A <b>lexico-syntactic pattern</b> is a fixed piece of syntax that, when it sits between two noun phrases, signals a semantic relation between them. Matching such patterns against raw text turns sentences into relation triples with no labeled training data.</p>
+    <p class="zh">词汇-句法模板是一段固定的句法结构。当它出现在两个名词短语之间时，就指示两者之间的某种语义关系。用模板去匹配原始文本，不需要任何标注数据就能把句子变成关系三元组。</p>
+  </div>
+
+  <figure>
+    <div class="fig-box">
+      <svg viewBox="0 0 760 150" role="img" aria-label="Pipeline: raw text is matched by patterns into candidate pairs, which are counted and filtered into a taxonomy.">
+        <defs>
+          <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        </defs>
+        <g font-size="13">
+          <rect x="10" y="30" width="140" height="70" rx="8" class="f-card s-rule" stroke-width="1.5"/>
+          <text x="80" y="58" text-anchor="middle" font-weight="600">Raw text</text>
+          <text x="80" y="78" text-anchor="middle" font-size="11" class="f-muted">large corpus</text>
+          <rect x="210" y="30" width="140" height="70" rx="8" class="f-card s-trigger" stroke-width="1.5"/>
+          <text x="280" y="58" text-anchor="middle" font-weight="600">Pattern matcher</text>
+          <text x="280" y="78" text-anchor="middle" class="mono" font-size="10">such as · and other</text>
+          <rect x="410" y="30" width="140" height="70" rx="8" class="f-card s-rule" stroke-width="1.5"/>
+          <text x="480" y="58" text-anchor="middle" font-weight="600">Candidate pairs</text>
+          <text x="480" y="78" text-anchor="middle" class="mono" font-size="10">(apple, fruit) ×912</text>
+          <rect x="610" y="30" width="140" height="70" rx="8" class="f-card s-hyper" stroke-width="1.5"/>
+          <text x="680" y="58" text-anchor="middle" font-weight="600">Taxonomy</text>
+          <text x="680" y="78" text-anchor="middle" class="mono" font-size="11">is-a edges</text>
+          <line x1="150" y1="65" x2="206" y2="65" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar1)"/>
+          <line x1="350" y1="65" x2="406" y2="65" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar1)"/>
+          <line x1="550" y1="65" x2="606" y2="65" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar1)"/>
+          <text x="178" y="56" text-anchor="middle" font-size="11" class="f-muted">scan</text>
+          <text x="378" y="56" text-anchor="middle" font-size="11" class="f-muted">emit</text>
+          <text x="578" y="56" text-anchor="middle" font-size="11" class="f-muted">filter</text>
+          <text x="80" y="124" text-anchor="middle" class="zh-svg" font-size="12">原始文本</text>
+          <text x="280" y="124" text-anchor="middle" class="zh-svg" font-size="12">模板匹配</text>
+          <text x="480" y="124" text-anchor="middle" class="zh-svg" font-size="12">候选词对 + 计数</text>
+          <text x="680" y="124" text-anchor="middle" class="zh-svg" font-size="12">分类体系</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption>The basic pipeline. Each pattern hit emits one candidate pair; frequency across the corpus decides which pairs survive. The count shown is illustrative.
+      <span class="zh">基本流程：每次模板命中产出一个候选词对，再根据在整个语料中的出现频次决定保留哪些。图中的计数仅作示意。</span></figcaption>
+  </figure>
+
+  <div class="sub">
+    <h3>Hearst's three criteria for a good pattern <span class="zh-inline">Hearst 提出的三条标准</span></h3>
+    <div class="grid g3">
+      <div class="card"><div class="kicker">Criterion 1</div><h4>Frequent</h4><p>Occurs often, and in many genres of text.</p><p class="zh">在多种文体中频繁出现。</p></div>
+      <div class="card"><div class="kicker">Criterion 2</div><h4>Reliable</h4><p>Almost always indicates the relation of interest.</p><p class="zh">几乎总是指示目标关系。</p></div>
+      <div class="card"><div class="kicker">Criterion 3</div><h4>Knowledge-free</h4><p>Recognizable without prior knowledge of the words involved.</p><p class="zh">不需要预先懂得相关词的含义就能识别。</p></div>
+    </div>
+    <div class="prose">
+      <p>Hearst also sketched how to find new patterns: take word pairs already known to stand in the relation, collect the contexts where they co-occur, and generalize what those contexts share. That procedure is the seed of bootstrapping (Section 6).</p>
+      <p class="zh">Hearst 还给出了发现新模板的流程：拿已知具有该关系的词对，收集它们在语料中共现的上下文，归纳这些上下文的共同点。这个流程就是后来 bootstrapping 的雏形（见第 6 节）。</p>
+    </div>
+  </div>
+  <div class="sub">
+    <h3>Structural pattern vs lexical trigger <span class="zh-inline">结构型模板与词汇型触发词</span></h3>
+    <div class="grid g2">
+      <div class="card" style="display:grid;gap:10px;align-content:start">
+        <div class="kicker">Structural · one trigger, every domain</div>
+        <p class="annot"><span class="small mono">medicine</span><br><span class="ann hyper">NSAIDs</span> <span class="ann trigger">such as</span> <span class="ann hypo">ibuprofen</span></p>
+        <p class="annot"><span class="small mono">law</span><br><span class="ann hyper">felonies</span> <span class="ann trigger">such as</span> <span class="ann hypo">burglary</span></p>
+        <p class="annot"><span class="small mono">sport</span><br><span class="ann hyper">sports</span> <span class="ann trigger">such as</span> <span class="ann hypo">cricket</span></p>
+        <p>The words <em>such as</em> carry no meaning of “category”. The structure does the work, so the pattern transfers to any domain.</p>
+        <p class="zh">such as 这几个词本身没有“类别”的意思，起作用的是结构，所以它能迁移到任何领域。</p>
+      </div>
+      <figure>
+        <div class="fig-box">
+          <svg viewBox="0 0 380 260" role="img" aria-label="The relation ACQUIRE has five surface forms. A hand-written pattern X acquired Y covers one; the other four are missed.">
+            <g font-size="11">
+              <line x1="190" y1="130" x2="190" y2="44" class="s-trigger" stroke-width="2"/>
+              <line x1="190" y1="130" x2="318" y2="98" class="s-muted" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <line x1="190" y1="130" x2="290" y2="202" class="s-muted" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <line x1="190" y1="130" x2="92" y2="202" class="s-muted" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <line x1="190" y1="130" x2="72" y2="98" class="s-muted" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <ellipse cx="190" cy="130" rx="74" ry="24" class="f-card s-hyper" stroke-width="1.8"/>
+              <text x="190" y="134" text-anchor="middle" class="mono" font-size="12" font-weight="500">ACQUIRE(X, Y)</text>
+              <rect x="142" y="20" width="96" height="26" rx="5" class="f-card s-trigger" stroke-width="1.8"/>
+              <text x="190" y="37" text-anchor="middle" class="mono f-trigger">X acquired Y</text>
+              <text x="246" y="37" class="f-good" font-size="12">✓</text>
+              <rect x="277" y="74" width="82" height="26" rx="5" class="f-card s-rule" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="318" y="91" text-anchor="middle" class="mono f-muted">X bought Y</text>
+              <rect x="212" y="202" width="158" height="26" rx="5" class="f-card s-rule" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="291" y="219" text-anchor="middle" class="mono f-muted">Y was snapped up by X</text>
+              <rect x="20" y="202" width="134" height="26" rx="5" class="f-card s-rule" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="87" y="219" text-anchor="middle" class="mono f-muted">X's takeover of Y</text>
+              <rect x="8" y="74" width="128" height="26" rx="5" class="f-card s-rule" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="72" y="91" text-anchor="middle" class="mono f-muted">Y, now owned by X</text>
+              <text x="190" y="252" text-anchor="middle" class="f-muted" font-size="11">solid: covered by the pattern · dashed: missed</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption>A lexical trigger names the relation itself, so one hand-written pattern covers one surface form out of many. Coverage of paraphrases is the hard part.
+          <span class="zh">词汇型触发词就是关系本身的说法，手写一条只能覆盖众多说法中的一种。难点在于覆盖各种改写。</span></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 2 TRY -->
+<section id="try" aria-labelledby="h-try">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 4 · GEN 1</div>
+    <h2 id="h-try">Try the matcher <span class="zh-inline">动手匹配</span></h2>
+  </div>
+  <div class="prose">
+    <p>This is a small Hearst-pattern matcher running in your browser. Pick an example or type your own English sentence. It knows the six original patterns and finds noun-phrase edges with simple word rules and no parser, so its mistakes are as instructive as its hits. Dashed buttons are the tricky cases.</p>
+    <p class="zh">这是一个在浏览器里运行的简化版 Hearst 模板匹配器。可以选一个例子，也可以输入自己的英文句子。它只认识 Hearst 的 6 条原始模板，用简单的词规则判断名词短语边界，没有句法分析器，所以它出错的地方和命中的地方同样有参考价值。虚线按钮是容易出错的例子。</p>
+  </div>
+  <div class="matcher card">
+    <div class="ex-btns" role="group" aria-label="Example sentences">
+      <button class="btn" type="button" data-s="The bow lute, such as the Bambara ndang, is plucked.">such as</button>
+      <button class="btn" type="button" data-s="He admired such authors as Herrick, Goldsmith, and Shakespeare.">such … as</button>
+      <button class="btn" type="button" data-s="Bruises, wounds, broken bones or other injuries need care.">or other</button>
+      <button class="btn" type="button" data-s="Temples, treasuries, and other important civic buildings stood nearby.">and other</button>
+      <button class="btn" type="button" data-s="All common-law countries, including Canada and England, use precedent.">including</button>
+      <button class="btn" type="button" data-s="Most European countries, especially France, England, and Spain, joined the treaty.">especially</button>
+      <button class="btn tricky" type="button" data-s="Problems such as this are common." data-note="The pattern fires, but “this” is a pronoun, not a member of a category. Real systems drop pronouns and keep only pairs seen many times." data-zh="模板命中了，但 this 是代词，不是类别成员。实际系统会去掉代词，只保留多次出现的词对。">noise</button>
+      <button class="btn tricky" type="button" data-s="Early naturalists grouped whales, dolphins and other fish together." data-note="The sentence reports an old belief, and the matcher outputs “whales is-a fish”, which is false. A pattern cannot see whose belief a sentence states." data-zh="这句话转述的是过去的观点，匹配器却抽出了“鲸鱼是鱼”，这是错的。模板看不出句子陈述的是谁的观点。">context</button>
+      <button class="btn tricky" type="button" data-s="NSAIDs such as ibuprofen relieve pain." data-note="With no part-of-speech tagger, the matcher cannot tell where the noun phrase ends and swallows the verb. This is the noun-phrase boundary problem in Section 10." data-zh="没有词性标注，匹配器判断不出名词短语在哪里结束，把动词也吞了进去。这就是第 10 节的名词短语边界问题。">NP edge</button>
+      <button class="btn tricky" type="button" data-s="Python is a good choice." data-good="1" data-note="No pattern fires, which is the right outcome. The copular pattern “X is a Y” is not among Hearst’s six, and this sentence shows how noisy it would be." data-zh="没有模板命中，这是正确的结果。系词模板“X is a Y”不在 Hearst 的 6 条里，这句话说明了它会有多大噪声。">no match</button>
+    </div>
+    <label for="mt-input" class="small">Sentence (English) · 句子（英文）</label>
+    <textarea id="mt-input" spellcheck="false">The bow lute, such as the Bambara ndang, is plucked.</textarea>
+    <div class="out" id="mt-out" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 4 CLASSIC -->
+<section id="classic" aria-labelledby="h-classic">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 5 · GEN 1</div>
+    <h2 id="h-classic">Classic patterns with examples <span class="zh-inline">经典模板与示例</span></h2>
+  </div>
+  <div class="sub">
+    <h3>5.1 The six Hearst patterns (1992) <span class="zh-inline">Hearst 的 6 条模板</span></h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Pattern</th><th>Example</th><th>Extracted</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pat">NP₀ such as NP₁, …, (and|or) NPₙ</span></td><td><span class="ann hyper">fruits</span> <span class="ann trigger">such as</span> <span class="ann hypo">apples</span> and <span class="ann hypo">bananas</span></td><td class="mono">apple → fruit</td></tr>
+          <tr><td><span class="pat">such NP₀ as NP₁, …</span></td><td><span class="ann trigger">such</span> <span class="ann hyper">authors</span> <span class="ann trigger">as</span> <span class="ann hypo">Herrick</span> and <span class="ann hypo">Shakespeare</span></td><td class="mono">Herrick → author</td></tr>
+          <tr><td><span class="pat">NP₁, …, or other NP₀</span></td><td><span class="ann hypo">bruises</span>, <span class="ann hypo">wounds</span>, <span class="ann trigger">or other</span> <span class="ann hyper">injuries</span></td><td class="mono">bruise → injury</td></tr>
+          <tr><td><span class="pat">NP₁, …, and other NP₀</span></td><td><span class="ann hypo">temples</span>, <span class="ann hypo">treasuries</span>, <span class="ann trigger">and other</span> <span class="ann hyper">civic buildings</span></td><td class="mono">temple → civic building</td></tr>
+          <tr><td><span class="pat">NP₀, including NP₁, …</span></td><td><span class="ann hyper">common-law countries</span>, <span class="ann trigger">including</span> <span class="ann hypo">Canada</span> and <span class="ann hypo">England</span></td><td class="mono">Canada → common-law country</td></tr>
+          <tr><td><span class="pat">NP₀, especially NP₁, …</span></td><td><span class="ann hyper">European countries</span>, <span class="ann trigger">especially</span> <span class="ann hypo">France</span> and <span class="ann hypo">Spain</span></td><td class="mono">France → European country</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p>The approach scales. WebIsADb (Seitner et al., 2016) ran 59 patterns gathered from the literature over a web-scale crawl and extracted more than 400 million is-a pairs. Probase (Wu et al., 2012) used Hearst patterns on web text to build a taxonomy of millions of concepts.</p>
+      <p class="zh">这种方法可以扩展到很大规模。WebIsADb (Seitner et al., 2016) 在网络规模语料上运行了从文献中收集的 59 条模板，抽出 4 亿多条上下位词对。Probase (Wu et al., 2012) 用 Hearst 模板在网页文本上构建了包含数百万概念的分类体系。</p>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>5.2 Chinese counterparts <span class="zh-inline">中文对应模板</span></h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Pattern</th><th>Example</th><th>Extracted (gloss)</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pat">X、Y等Z</span></td><td style="font-family:var(--zh)"><span class="ann hypo">苹果</span>、<span class="ann hypo">香蕉</span><span class="ann trigger">等</span><span class="ann hyper">水果</span></td><td class="mono">apple, banana → fruit</td></tr>
+          <tr><td><span class="pat">Z，比如/如/例如 X 和 Y</span></td><td style="font-family:var(--zh)"><span class="ann hyper">水果</span>，<span class="ann trigger">比如</span><span class="ann hypo">苹果</span>和<span class="ann hypo">香蕉</span></td><td class="mono">apple, banana → fruit</td></tr>
+          <tr><td><span class="pat">Z，包括 X 和 Y</span></td><td style="font-family:var(--zh)"><span class="ann hyper">球类运动</span>，<span class="ann trigger">包括</span><span class="ann hypo">足球</span>和<span class="ann hypo">篮球</span></td><td class="mono">football, basketball → ball sport</td></tr>
+          <tr><td><span class="pat">X之类的Z</span></td><td style="font-family:var(--zh)"><span class="ann hypo">苹果</span><span class="ann trigger">之类的</span><span class="ann hyper">水果</span></td><td class="mono">apple → fruit</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p><b>等</b> is the most productive Chinese trigger and also the noisiest. It can mark an open list, or close a complete one, as in 北京、上海等两座城市, where the noun after it is a count rather than a category.</p>
+      <p class="zh">“等”是产出最多的中文触发词，也是噪声最大的。它既可以表示列举未尽，也可以收尾一个完整的列举，比如“北京、上海等两座城市”，这时后面的名词是计数，不是类别。</p>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>5.3 Beyond is-a: patterns for other relations <span class="zh-inline">其他关系的经典模板</span></h3>
+    <p class="small">In these cards, teal and amber mark the two arguments of the relation. · 卡片中青色和橙色标出关系的两个论元。</p>
+    <div class="grid g2">
+      <div class="card"><div class="kicker">Part–whole · 部分-整体</div><p><span class="pat">whole's part</span> <span class="pat">part of whole</span></p><p class="annot">the <span class="ann hyper">building</span><span class="ann trigger">'s</span> <span class="ann hypo">basement</span></p><p class="src">Berland &amp; Charniak 1999 · Girju et al. 2006</p></div>
+      <div class="card"><div class="kicker">Adjective polarity · 形容词极性</div><p><span class="pat">X and Y</span> same polarity · <span class="pat">X but Y</span> opposite</p><p class="annot"><span class="ann hyper">simple</span> <span class="ann trigger">and</span> <span class="ann hypo">elegant</span> · <span class="ann hyper">elegant</span> <span class="ann trigger">but</span> <span class="ann hypo">expensive</span></p><p class="src">Hatzivassiloglou &amp; McKeown 1997</p></div>
+      <div class="card"><div class="kicker">Synonym vs antonym · 同义/反义区分</div><p><span class="pat">from X to Y</span> <span class="pat">either X or Y</span></p><p class="annot"><span class="ann trigger">from</span> <span class="ann hyper">cold</span> <span class="ann trigger">to</span> <span class="ann hypo">hot</span></p><p>Cold and hot sit close together in embedding space. These patterns show they are opposites, not synonyms.</p><p class="zh">cold 和 hot 在词向量空间里很接近，这些模板说明它们是对立词，不是同义词。</p><p class="src">Lin et al. 2003</p></div>
+      <div class="card"><div class="kicker">Verb relations · 动词间关系</div><p><span class="pat">X-ed and then Y-ed</span> happens-before · <span class="pat">not only X but Y</span> stronger</p><p class="annot"><span class="ann trigger">not only</span> <span class="ann hyper">surprised</span> <span class="ann trigger">but</span> <span class="ann hypo">shocked</span></p><p class="src">VerbOcean · Chklovski &amp; Pantel 2004</p></div>
+      <div class="card"><div class="kicker">Attributes · 属性</div><p><span class="pat">the * of the C is</span></p><p class="annot">the <span class="ann hypo">color</span> <span class="ann trigger">of the</span> <span class="ann hyper">car</span> <span class="ann trigger">is</span> red</p><p>Words that keep filling the slot (color, price, top speed) are attributes of the concept.</p><p class="zh">反复填进空位的词（颜色、价格、最高速度）就是这个概念的属性。</p><p class="src">Almuhareb &amp; Poesio 2004</p></div>
+      <div class="card"><div class="kicker">Causality · 因果</div><p><span class="pat">NP cause NP</span> and other causal verbs</p><p class="annot"><span class="ann hyper">smoking</span> <span class="ann trigger">causes</span> <span class="ann hypo">cancer</span></p><p class="src">Khoo et al. 2000 · Girju 2003</p></div>
+      <div class="card"><div class="kicker">Comparison · 比较</div><p>comparatives, <span class="pat">X outperforms Y</span></p><p class="annot"><span class="ann hyper">Model A</span> <span class="ann trigger">outperforms</span> <span class="ann hypo">Model B</span></p><p class="src">Jindal &amp; Liu 2006</p></div>
+      <div class="card"><div class="kicker">Open relations · 开放关系</div><p><span class="pat">V | V P | V W* P</span></p><p class="annot"><span class="ann hyper">Faust</span> <span class="ann trigger">made a deal with</span> <span class="ann hypo">the devil</span></p><p class="src">ReVerb · Fader et al. 2011</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 LEARNING -->
+<section id="learning" aria-labelledby="h-learn">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 6 · GEN 1</div>
+    <h2 id="h-learn">Learning patterns automatically <span class="zh-inline">自动学习模板</span></h2>
+  </div>
+  <div class="prose">
+    <p>Hand-written patterns are precise but few. From 1998 on, systems grew patterns from a handful of seeds and scored them, and Open IE later dropped the fixed list of relations altogether.</p>
+    <p class="zh">手写模板准确但数量少。从 1998 年起，系统开始从少量种子出发自动扩展模板并给模板打分；之后 Open IE 干脆不再预设关系列表。</p>
+  </div>
+
+  <!-- 5.2 -->
+  <div class="sub">
+    <h3>6.1 Bootstrapping from seeds, 1998– <span class="zh-inline">从种子出发的 bootstrapping</span></h3>
+    <div class="prose">
+      <p>Instead of writing patterns, start from a few seed pairs and let pairs and patterns find each other in alternation.</p>
+      <p class="zh">不再手写模板，而是从少量种子词对出发，让词对和模板交替地互相发现。</p>
+    </div>
+    <figure>
+      <div class="fig-box">
+        <svg viewBox="0 0 720 300" role="img" aria-label="Bootstrapping loop: seed pairs are searched in the corpus, their contexts are generalized into a pattern, the pattern is matched to find new pairs, and confident pairs are added to the seeds.">
+          <defs>
+            <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+          </defs>
+          <g font-size="13">
+            <rect x="20" y="20" width="230" height="78" rx="8" class="f-card s-hyper" stroke-width="1.6"/>
+            <text x="135" y="44" text-anchor="middle" font-weight="600">1 · Seed pairs</text>
+            <text x="135" y="64" text-anchor="middle" class="mono" font-size="11.5">(Dune, Frank Herbert)</text>
+            <text x="135" y="84" text-anchor="middle" class="zh-svg" font-size="11">（《三体》，刘慈欣）</text>
+
+            <rect x="470" y="20" width="230" height="78" rx="8" class="f-card s-rule" stroke-width="1.6"/>
+            <text x="585" y="44" text-anchor="middle" font-weight="600">2 · Find contexts</text>
+            <text x="585" y="64" text-anchor="middle" font-size="12">“Dune, by Frank Herbert”</text>
+            <text x="585" y="84" text-anchor="middle" class="zh-svg" font-size="11">“《三体》作者刘慈欣”</text>
+
+            <rect x="470" y="202" width="230" height="78" rx="8" class="f-card s-trigger" stroke-width="1.6"/>
+            <text x="585" y="226" text-anchor="middle" font-weight="600">3 · Induce a pattern</text>
+            <text x="585" y="246" text-anchor="middle" class="mono f-trigger" font-size="11.5">&lt;TITLE&gt;, by &lt;AUTHOR&gt;</text>
+            <text x="585" y="266" text-anchor="middle" class="zh-svg" font-size="11">《X》作者Y</text>
+
+            <rect x="20" y="202" width="230" height="78" rx="8" class="f-card s-rule" stroke-width="1.6"/>
+            <text x="135" y="226" text-anchor="middle" font-weight="600">4 · Match, score, add</text>
+            <text x="135" y="246" text-anchor="middle" class="mono" font-size="11.5">(Emma, Jane Austen)</text>
+            <text x="135" y="266" text-anchor="middle" class="zh-svg" font-size="11">（《活着》，余华）</text>
+
+            <line x1="250" y1="59" x2="466" y2="59" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar3)"/>
+            <text x="358" y="50" text-anchor="middle" font-size="11" class="f-muted">search the corpus</text>
+            <line x1="585" y1="98" x2="585" y2="198" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar3)"/>
+            <text x="595" y="153" font-size="11" class="f-muted">generalize</text>
+            <line x1="470" y1="241" x2="254" y2="241" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar3)"/>
+            <text x="362" y="232" text-anchor="middle" font-size="11" class="f-muted">match the corpus</text>
+            <line x1="135" y1="202" x2="135" y2="102" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar3)"/>
+            <text x="145" y="153" font-size="11" class="f-muted">add confident pairs</text>
+            <text x="360" y="150" text-anchor="middle" font-size="12" font-style="italic" class="f-muted">repeat until no new pairs</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>The bootstrapping loop, shown with a (book, author) relation as in DIPRE. Snowball added a confidence score for each pattern and each new pair before step 4, so weak patterns stop feeding the loop.
+        <span class="zh">bootstrapping 循环，用 DIPRE 那样的（书名，作者）关系演示。Snowball 在第 4 步之前给每条模板和每个新词对打置信度，低质量模板就不再进入循环。</span></figcaption>
+    </figure>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Method</th><th>Key contribution</th></tr></thead>
+        <tbody>
+          <tr><td><b>DIPRE</b><br><span class="small">Brin 1998</span></td><td>First web-scale bootstrapping, seeded with (book, author) pairs.<span class="zh">最早的 web 规模 bootstrapping，种子是（书名，作者）。</span></td></tr>
+          <tr><td><b>Snowball</b><br><span class="small">Agichtein &amp; Gravano 2000</span></td><td>Confidence scores for patterns and tuples; low-confidence ones are filtered out.<span class="zh">给模板和元组打置信度，过滤低置信度的部分。</span></td></tr>
+          <tr><td><b>Mutual bootstrapping, Basilisk</b><br><span class="small">Riloff &amp; Jones 1999; Thelen &amp; Riloff 2002</span></td><td>Grow a semantic lexicon and its extraction patterns together.<span class="zh">同时扩展语义词典和抽取模板。</span></td></tr>
+          <tr><td><b>KnowItAll</b><br><span class="small">Etzioni et al. 2005</span></td><td>Extract with Hearst-style patterns, then validate candidates by PMI computed from search-engine hit counts.<span class="zh">先用 Hearst 类模板抽取，再用搜索引擎命中数计算的 PMI 验证候选。</span></td></tr>
+          <tr><td><b>Espresso</b><br><span class="small">Pantel &amp; Pennacchiotti 2006</span></td><td>PMI-based reliability lets noisy generic patterns contribute without flooding the output.<span class="zh">基于 PMI 的可靠度，让噪声大的泛化模板也能发挥作用而不淹没结果。</span></td></tr>
+          <tr><td><b>Mutual exclusion</b><br><span class="small">Curran et al. 2007</span></td><td>Grow several categories at once and forbid overlap between them, which limits drift.<span class="zh">多个类别同时扩展且互相排斥，限制语义漂移。</span></td></tr>
+          <tr><td><b>Doubly-anchored pattern (DAP)</b><br><span class="small">Kozareva, Riloff &amp; Hovy 2008</span></td><td><span class="pat">&lt;class&gt; such as &lt;seed&gt; and *</span> requires both the class name and a known member.<span class="zh">同时要求类名和一个已知成员出现。</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:8px">Pattern reliability in Espresso <span class="zh-inline">Espresso 的模板可靠度</span></h3>
+    <div class="card" style="display:grid;gap:12px">
+      <p class="mono" style="font-size:1rem;overflow-x:auto;white-space:nowrap">r<sub>π</sub>(p) = (1 / |I|) · Σ<sub>i∈I</sub> [ pmi(i, p) / max<sub>pmi</sub> ] · r<sub>ι</sub>(i)</p>
+      <p>A pattern is reliable when it has high PMI with reliable instances. Instance reliability is defined the same way in reverse, so the two scores are updated in alternation.</p>
+      <p class="zh">一条模板如果与可靠的实例有高 PMI，它就可靠。实例的可靠度用对称的方式定义，所以两种分数交替更新。</p>
+      <div class="grid g2">
+        <div>
+          <p class="small"><span class="pat">Y such as X</span> · target: is-a</p>
+          <ul class="small" style="margin:6px 0 0;padding-left:1.1em;display:grid;gap:3px;color:var(--ink)">
+            <li><span class="ok">✓</span> (fruit, apple)</li><li><span class="ok">✓</span> (sport, cricket)</li><li><span class="ok">✓</span> (country, France)</li><li><span class="no">✗</span> (problem, this)</li>
+          </ul>
+        </div>
+        <div>
+          <p class="small"><span class="pat">X has Y</span> · target: part-whole</p>
+          <ul class="small" style="margin:6px 0 0;padding-left:1.1em;display:grid;gap:3px;color:var(--ink)">
+            <li><span class="ok">✓</span> (car, engine)</li><li><span class="no">✗</span> (John, a cold)</li><li><span class="no">✗</span> (company, 500 employees)</li><li><span class="no">✗</span> (she, a meeting)</li>
+          </ul>
+        </div>
+      </div>
+      <p class="small">Illustrative matches. The first pattern binds mostly to on-target pairs; the second binds to almost anything, so its reliability score is low. · 示意性的匹配结果。前一条模板主要命中目标词对，后一条几乎什么都命中，所以可靠度低。</p>
+    </div>
+
+    <h3 style="margin-top:8px">Semantic drift, and how anchoring stops it <span class="zh-inline">语义漂移与双锚定</span></h3>
+    <figure>
+      <div class="fig-box">
+        <svg viewBox="0 0 760 232" role="img" aria-label="Semantic drift across two rounds: seed cities lead to the pattern a trip to X, which admits the beach; the beach leads to relax on X, which admits the sofa and the balcony.">
+          <defs>
+            <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+          </defs>
+          <g font-size="13">
+            <text x="100" y="24" text-anchor="middle" font-weight="600">Round 0 · seeds</text>
+            <text x="100" y="40" text-anchor="middle" class="zh-svg" font-size="11">第 0 轮：种子</text>
+            <rect x="20" y="52" width="160" height="130" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+            <circle cx="42" cy="82" r="5" class="f-hyper"/><text x="56" y="87">Paris</text>
+            <circle cx="42" cy="112" r="5" class="f-hyper"/><text x="56" y="117">London</text>
+
+            <line x1="184" y1="117" x2="286" y2="117" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar4)"/>
+            <text x="235" y="100" text-anchor="middle" font-size="11" class="f-muted">learns</text>
+            <text x="235" y="138" text-anchor="middle" font-size="11" class="mono f-trigger">a trip to X</text>
+
+            <text x="370" y="24" text-anchor="middle" font-weight="600">Round 1</text>
+            <text x="370" y="40" text-anchor="middle" class="zh-svg" font-size="11">第 1 轮</text>
+            <rect x="290" y="52" width="160" height="130" rx="8" class="f-card s-rule" stroke-width="1.4"/>
+            <circle cx="312" cy="82" r="5" class="f-hyper"/><text x="326" y="87">Tokyo</text>
+            <circle cx="312" cy="112" r="5" class="f-hyper"/><text x="326" y="117">Rome</text>
+            <circle cx="312" cy="142" r="5" class="f-bad"/><text x="326" y="147" class="f-bad">the beach</text>
+
+            <line x1="454" y1="147" x2="556" y2="147" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar4)"/>
+            <text x="505" y="130" text-anchor="middle" font-size="11" class="f-muted">learns</text>
+            <text x="505" y="168" text-anchor="middle" font-size="11" class="mono f-trigger">relax on X</text>
+
+            <text x="640" y="24" text-anchor="middle" font-weight="600">Round 2</text>
+            <text x="640" y="40" text-anchor="middle" class="zh-svg" font-size="11">第 2 轮</text>
+            <rect x="560" y="52" width="160" height="130" rx="8" class="f-card s-bad" stroke-width="1.4"/>
+            <circle cx="582" cy="82" r="5" class="f-hyper"/><text x="596" y="87">Madrid</text>
+            <circle cx="582" cy="112" r="5" class="f-bad"/><text x="596" y="117" class="f-bad">the sofa</text>
+            <circle cx="582" cy="142" r="5" class="f-bad"/><text x="596" y="147" class="f-bad">the balcony</text>
+
+            <circle cx="30" cy="212" r="5" class="f-hyper"/><text x="42" y="216" font-size="11">on target (a city)</text>
+            <circle cx="170" cy="212" r="5" class="f-bad"/><text x="182" y="216" font-size="11">drifted</text>
+            <text x="250" y="216" font-size="11" class="zh-svg">青色：目标类别　红色：已漂移</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>One off-target pair (the beach) brings in a pattern of its own, and by round 2 the “city” list contains furniture. Illustrative example.
+        <span class="zh">一个偏离目标的词对（the beach）带来了它自己的模板，到第 2 轮，“城市”列表里已经出现了家具。示意性例子。</span></figcaption>
+    </figure>
+    <div class="note good">
+      <p><b>Fix: doubly-anchored pattern.</b> <span class="pat">cities such as Paris and *</span> admits Rome, Madrid and Berlin, but not the balcony, because the class word <em>cities</em> and a trusted member <em>Paris</em> must both be present (Kozareva, Riloff &amp; Hovy 2008).</p>
+      <p class="zh">对策：双锚定模板。“cities such as Paris and *”能引入 Rome、Madrid、Berlin，但引入不了 the balcony，因为类名 cities 和可信成员 Paris 必须同时出现。</p>
+    </div>
+
+    <h3 style="margin-top:8px">6.2 Paraphrase rules from shared slot fillers <span class="zh-inline">从共享填充词学习改写规则</span></h3>
+    <figure>
+      <div class="fig-box">
+        <svg viewBox="0 0 720 200" role="img" aria-label="Two dependency paths, X solves Y and X finds a solution to Y, connect the same argument pairs, so DIRT treats them as paraphrases.">
+          <g font-size="13">
+            <rect x="20" y="40" width="200" height="40" rx="7" class="f-card s-trigger" stroke-width="1.6"/>
+            <text x="120" y="65" text-anchor="middle" class="mono" font-size="12">X solves Y</text>
+            <rect x="20" y="124" width="200" height="40" rx="7" class="f-card s-trigger" stroke-width="1.6"/>
+            <text x="120" y="149" text-anchor="middle" class="mono" font-size="12">X finds a solution to Y</text>
+            <rect x="320" y="18" width="180" height="34" rx="6" class="f-card s-rule" stroke-width="1.3"/>
+            <text x="410" y="40" text-anchor="middle" class="mono" font-size="11.5">(engineer, problem)</text>
+            <rect x="320" y="84" width="180" height="34" rx="6" class="f-card s-rule" stroke-width="1.3"/>
+            <text x="410" y="106" text-anchor="middle" class="mono" font-size="11.5">(algorithm, equation)</text>
+            <rect x="320" y="150" width="180" height="34" rx="6" class="f-card s-rule" stroke-width="1.3"/>
+            <text x="410" y="172" text-anchor="middle" class="mono" font-size="11.5">(team, puzzle)</text>
+            <g class="s-muted" stroke-width="1.1">
+              <line x1="220" y1="60" x2="320" y2="35"/><line x1="220" y1="60" x2="320" y2="101"/><line x1="220" y1="60" x2="320" y2="167"/>
+              <line x1="220" y1="144" x2="320" y2="35"/><line x1="220" y1="144" x2="320" y2="101"/><line x1="220" y1="144" x2="320" y2="167"/>
+            </g>
+            <text x="610" y="96" text-anchor="middle" font-size="34" class="f-trigger">≈</text>
+            <text x="610" y="124" text-anchor="middle" font-size="12">same slot fillers</text>
+            <text x="610" y="142" text-anchor="middle" font-size="12">⇒ paraphrase rule</text>
+            <text x="610" y="162" text-anchor="middle" class="zh-svg" font-size="11">填充词相同 ⇒ 互为改写</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>DIRT (Lin &amp; Pantel 2001) applies the distributional hypothesis to dependency paths: paths that connect the same kinds of word pairs have similar meanings. Argument pairs here are illustrative.
+        <span class="zh">DIRT 把分布假设用在依存路径上：连接同类词对的路径含义相近。图中的论元对仅作示意。</span></figcaption>
+    </figure>
+  </div>
+
+  <!-- 5.3 -->
+  <div class="sub">
+    <h3>6.3 Open information extraction, 2007– <span class="zh-inline">开放信息抽取</span></h3>
+    <div class="prose">
+      <p>TextRunner (Banko et al., 2007) extracted triples with no fixed list of relations. ReVerb (Fader et al., 2011) showed that one syntactic constraint on the relation phrase removes most incoherent and uninformative extractions. After a neural phase, LLMs moved Open IE toward generative extraction from 2023 onward (Liu et al., 2024 survey).</p>
+      <p class="zh">TextRunner 不预设关系列表直接抽取三元组。ReVerb 证明了：对关系短语加一条句法约束，就能去掉大部分不连贯、没有信息量的抽取结果。经过神经网络阶段后，从 2023 年起，大模型把 Open IE 推向了生成式抽取。</p>
+    </div>
+    <div class="card" style="display:grid;gap:12px">
+      <p class="annot"><span class="ann hyper">Faust</span> <span class="ann trigger">made a deal with</span> <span class="ann hypo">the devil</span>.</p>
+      <div class="tbl-wrap" style="border:0">
+        <table>
+          <tbody>
+            <tr><td style="width:34%">First verb only</td><td class="mono">(Faust, made, a deal)</td><td><span class="no">✗</span> uninformative<span class="zh">信息量不足</span></td></tr>
+            <tr><td>ReVerb constraint</td><td class="mono">(Faust, made a deal with, the devil)</td><td><span class="ok">✓</span> complete relation<span class="zh">完整的关系</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small"><span class="pat">V | V P | V W* P</span> · V: verb, optionally with particle or adverb · W: noun, adjective, adverb, pronoun or determiner · P: preposition, particle or infinitive marker.</p>
+    </div>
+  </div>
+
+</section>
+
+<div class="part pg2" role="note">
+  <div class="kicker">Part II · Generation 2 · 2005–2020</div>
+  <h2 class="part-title">Statistical and neural learning</h2>
+  <p>Relations are learned from data: sentences labeled through a knowledge base, word embeddings, or annotated benchmarks. Patterns become features and a source of supervision. Section 7.</p>
+  <p class="zh">第二部分 · 第二代：统计与神经学习。关系从数据中学习：通过知识库自动标注的句子、词向量或人工标注的基准。模板变成了特征和监督信号的来源。第 7 节。</p>
+</div>
+
+
+<!-- 7 GEN 2 -->
+<section id="gen2" aria-labelledby="h-gen2">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 7 · GEN 2</div>
+    <h2 id="h-gen2">Learning relations from data <span class="zh-inline">从数据中学习关系</span></h2>
+  </div>
+
+  <div class="sub">
+    <h3>7.1 Distant supervision <span class="zh-inline">远程监督</span></h3>
+    <div class="prose">
+      <p>Instead of writing patterns, align a knowledge base with text and let every co-occurrence of a known pair become a training example. Labels come for free, and so does noise.</p>
+      <p class="zh">不再编写模板，而是把知识库和文本对齐，让已知词对的每次共现都成为训练样本。标签不花钱，噪声也随之而来。</p>
+    </div>
+    <figure>
+      <div class="fig-box">
+        <svg viewBox="0 0 760 236" role="img" aria-label="Distant supervision: the knowledge-base fact Steve Jobs founder_of Apple labels three sentences that mention both entities. Two express the relation; the third does not and becomes a noisy training example.">
+          <defs>
+            <marker id="ar8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+          </defs>
+          <g font-size="12">
+            <rect x="10" y="76" width="240" height="64" rx="8" class="f-tint s-g2" stroke-width="1.8"/>
+            <text x="130" y="98" text-anchor="middle" font-weight="600" font-size="12.5">Knowledge-base fact</text>
+            <text x="130" y="117" text-anchor="middle" font-size="10.5" class="mono">(Steve Jobs, founder_of, Apple)</text>
+            <text x="130" y="133" text-anchor="middle" font-size="10" class="zh-svg">知识库中的事实</text>
+            <g stroke="currentColor" stroke-width="1.3">
+              <line x1="250" y1="100" x2="326" y2="34" marker-end="url(#ar8)"/>
+              <line x1="250" y1="108" x2="326" y2="110" marker-end="url(#ar8)"/>
+              <line x1="250" y1="116" x2="326" y2="186" marker-end="url(#ar8)"/>
+            </g>
+            <rect x="330" y="14" width="360" height="40" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+            <text x="346" y="39">Steve Jobs founded Apple in 1976.</text>
+            <text x="712" y="40" font-size="15" class="f-good">✓</text>
+            <rect x="330" y="90" width="360" height="40" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+            <text x="346" y="115">Jobs and Wozniak started Apple in a garage.</text>
+            <text x="712" y="116" font-size="15" class="f-good">✓</text>
+            <rect x="330" y="166" width="360" height="40" rx="7" class="f-card s-bad" stroke-width="1.5"/>
+            <text x="346" y="191">Steve Jobs unveiled the iPhone at an Apple event.</text>
+            <text x="712" y="192" font-size="15" class="f-bad">✗</text>
+            <text x="510" y="226" text-anchor="middle" font-size="10.5" class="f-bad">labeled founder_of anyway: a noisy training example</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Every sentence that mentions both entities is labeled with the fact. The third sentence does not express it. Illustrative example.
+        <span class="zh">凡是同时提到两个实体的句子都被标上这个事实，但第三句并没有表达它。示意性例子。</span></figcaption>
+    </figure>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Work</th><th>Step forward</th></tr></thead>
+        <tbody>
+          <tr><td><b>Snow, Jurafsky &amp; Ng</b><br><span class="small">2005</span></td><td>WordNet pairs label sentences for hypernymy; a classifier learns which dependency paths signal it (details below).<span class="zh">用 WordNet 词对标注句子，分类器学习哪些依存路径指示上下位（详见下文）。</span></td></tr>
+          <tr><td><b>Mintz et al.</b><br><span class="small">2009</span></td><td>Generalize to any relation in a knowledge base (Freebase): every sentence that mentions both entities of a fact counts as evidence for it.<span class="zh">推广到知识库（Freebase）中的任意关系：同时提到某事实两个实体的句子都算作它的证据。</span></td></tr>
+          <tr><td><b>Riedel, Yao &amp; McCallum</b><br><span class="small">2010</span></td><td>Relax the assumption: at least one of those sentences expresses the fact.<span class="zh">放宽假设：这些句子中至少有一句表达了该事实。</span></td></tr>
+          <tr><td><b>Zeng et al. (PCNN); Lin et al.</b><br><span class="small">2015; 2016</span></td><td>Neural encoders over bags of sentences; selective attention down-weights the noisy ones.<span class="zh">对句子包做神经编码；选择性注意力降低噪声句子的权重。</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 style="margin-top:8px">The first distant supervision: Snow et al. (2005) <span class="zh-inline">最早的远程监督</span></h3>
+    <div class="card" style="display:grid;gap:10px">
+      <div class="arrow-row" style="color:var(--ink)">
+        <span class="chip">WordNet pair (dog, animal)</span><span aria-hidden="true">→</span>
+        <span class="chip">corpus sentences with both</span><span aria-hidden="true">→</span>
+        <span class="chip">dependency path features</span><span aria-hidden="true">→</span>
+        <span class="chip">hypernym classifier</span>
+      </div>
+      <p>Snow, Jurafsky &amp; Ng (2005) labeled sentences with word pairs already linked in WordNet, represented each sentence by the dependency path between the two nouns, and trained a classifier on those paths. The learner recovered Hearst’s patterns and found new ones such as <span class="pat">Y like X</span>, <span class="pat">Y called X</span> and the appositive <span class="pat">X, a Y</span>. Labeling text with a knowledge base this way is distant supervision, years before Mintz et al. (2009) made it standard in relation extraction.</p>
+      <p class="zh">Snow 等人 (2005) 用 WordNet 中已有关系的词对去标注语料句子，把句子表示为两个名词之间的依存路径，再用这些路径训练分类器。学习器重新发现了 Hearst 的模板，还找到了 Y like X、Y called X 和同位语 X, a Y 等新模板。用知识库标注文本的做法就是远程监督，比 Mintz 等人 (2009) 把它变成关系抽取的标准做法早了好几年。</p>
+    </div>
+
+  </div>
+
+  <div class="sub">
+    <h3>7.2 Distributional evidence for hypernymy <span class="zh-inline">上下位的分布式证据</span></h3>
+    <div class="prose">
+      <p>Patterns need two words in the same sentence. Distributional methods compare the contexts each word appears in across the whole corpus, so they cover pairs that never co-occur.</p>
+      <p class="zh">模板要求两个词出现在同一句话里。分布式方法比较的是每个词在整个语料中出现的上下文，所以能覆盖从不共现的词对。</p>
+    </div>
+    <figure>
+      <div class="fig-box">
+        <svg viewBox="0 0 760 230" role="img" aria-label="Distributional inclusion: the contexts of dog sit inside the larger set of contexts of animal; animal also has contexts such as kingdom, welfare and endangered that dog lacks.">
+          <ellipse cx="380" cy="118" rx="340" ry="104" class="f-tint s-hyper" stroke-width="1.8"/>
+          <text x="380" y="36" text-anchor="middle" font-size="12.5" font-weight="600" class="f-hyper">contexts of animal (hypernym)</text>
+          <text x="380" y="52" text-anchor="middle" font-size="10" class="zh-svg">animal 的上下文（上位词）</text>
+          <ellipse cx="270" cy="128" rx="165" ry="68" class="f-card s-hypo" stroke-width="1.8"/>
+          <text x="270" y="88" text-anchor="middle" font-size="12" font-weight="600" class="f-hypo">contexts of dog (hyponym)</text>
+          <text x="270" y="103" text-anchor="middle" font-size="10" class="zh-svg">dog 的上下文（下位词）</text>
+          <g font-size="11" class="mono" text-anchor="middle">
+            <text x="270" y="128">feed the _</text><text x="270" y="148">the _ ran away</text><text x="270" y="168">a sick _</text>
+            <text x="565" y="102" class="f-muted">_ kingdom</text><text x="595" y="132" class="f-muted">_ welfare</text><text x="565" y="162" class="f-muted">endangered _</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Distributional inclusion (Geffet &amp; Dagan, 2005): the typical contexts of a hyponym should also occur with its hypernym, not the other way round. Directional scores such as WeedsPrec, ClarkeDE and invCL measure this asymmetry. Contexts are illustrative.
+        <span class="zh">分布包含假设：下位词的典型上下文也应出现在上位词那里，反之则不然。WeedsPrec、ClarkeDE、invCL 等方向性指标衡量的就是这种不对称。上下文仅作示意。</span></figcaption>
+    </figure>
+    <div class="note">
+      <p><b>Caution: lexical memorization.</b> Levy et al. (2015) showed that supervised classifiers over word embeddings often learn whether y is a typical hypernym, such as <em>animal</em> or <em>person</em>, rather than how x and y relate.</p>
+      <p class="zh">注意“词汇记忆”问题：Levy 等人 (2015) 发现，基于词向量的有监督分类器常常学到的是 y 是不是一个典型的上位词（比如 animal、person），而不是 x 和 y 之间的关系。</p>
+    </div>
+  </div>
+
+  <!-- 5.4 -->
+  <div class="sub">
+    <h3>7.3 Patterns plus distributional models, 2016–2020 <span class="zh-inline">模板与分布式表示结合</span></h3>
+    <div class="prose">
+      <p>Pattern evidence is precise but extremely sparse: two words must co-occur in exactly the right configuration. HypeNET (Shwartz et al., 2016) encoded dependency paths with an LSTM and combined them with word embeddings. Roller, Kiela &amp; Nickel (2018) showed that simple pattern-based models beat distributional ones on several hypernymy benchmarks, and that a low-rank embedding of the pattern matrix fixes much of the sparsity. Yu et al. (2020) used distributional models for pairs that patterns never cover.</p>
+      <p class="zh">模板证据准确但极其稀疏：两个词必须以恰好正确的结构共现。HypeNET 用 LSTM 编码依存路径并与词向量结合。Roller 等人 (2018) 证明简单的模板方法在多个上位词基准上胜过分布式方法，而对模板矩阵做低秩嵌入能解决大部分稀疏问题。Yu 等人 (2020) 对模板覆盖不到的词对用分布式模型补充。</p>
+    </div>
+    <div class="card" style="display:grid;gap:14px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+        <div class="seg" role="group" aria-label="Matrix view">
+          <button class="btn" type="button" id="mx-raw" aria-pressed="true">Raw pattern counts</button>
+          <button class="btn" type="button" id="mx-smooth" aria-pressed="false">Low-rank smoothed (rank 2)</button>
+        </div>
+        <span class="small mono">score(x, y) = u<sub>x</sub>ᵀ Σ<sub>r</sub> v<sub>y</sub></span>
+      </div>
+      <div style="overflow-x:auto"><table class="mx" id="mx" aria-label="Hyponym by hypernym matrix"></table></div>
+      <p class="small" id="mx-note"></p>
+      <p class="small">Illustrative counts. Rows are candidate hyponyms, columns candidate hypernyms. Roller et al. apply SVD to a PPMI matrix; this demo uses log(1 + count) so the arithmetic stays visible.</p>
+      <p class="zh">示意性计数。行是候选下位词，列是候选上位词。Roller 等人对 PPMI 矩阵做 SVD；本演示用 log(1 + 计数)，方便看清计算过程。</p>
+    </div>
+  </div>
+
+
+  <div class="sub">
+    <h3>7.4 Supervised relation classification <span class="zh-inline">有监督关系分类</span></h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Work</th><th>What it added</th></tr></thead>
+        <tbody>
+          <tr><td><b>SemEval-2010 Task 8</b><br><span class="small">Hendrickx et al. 2010</span></td><td>Nine directed relation types such as Cause-Effect and Component-Whole, plus Other, annotated on single sentences.<span class="zh">在单句上标注 9 种有方向的关系（如因果、部件-整体）外加 Other。</span></td></tr>
+          <tr><td><b>CNN classifier</b><br><span class="small">Zeng et al. 2014</span></td><td>Features learned from word and position embeddings replace hand-built patterns.<span class="zh">用词向量和位置向量自动学习特征，取代手工模板。</span></td></tr>
+          <tr><td><b>TACRED</b><br><span class="small">Zhang et al. 2017</span></td><td>A large benchmark built from TAC KBP text, with 41 relation types plus no_relation.<span class="zh">基于 TAC KBP 文本的大规模基准，41 种关系外加 no_relation。</span></td></tr>
+          <tr><td><b>Supervised Open IE</b><br><span class="small">Stanovsky et al. 2018</span></td><td>Open IE recast as supervised sequence labeling.<span class="zh">把 Open IE 改写成有监督的序列标注。</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+
+<div class="part pg3" role="note">
+  <div class="kicker">Part III · Generation 3 · 2019–2023</div>
+  <h2 class="part-title">Pretrained language models</h2>
+  <p>Relations come from models pretrained on huge amounts of text: fine-tune them on a few labels, or query them with prompts. Patterns become prompts. Section 8.</p>
+  <p class="zh">第三部分 · 第三代：预训练语言模型。关系来自在海量文本上预训练的模型：用少量标注微调，或者用 prompt 查询。模板变成了 prompt。第 8 节。</p>
+</div>
+
+
+<!-- 8 GEN 3 -->
+<section id="gen3" aria-labelledby="h-gen3">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 8 · GEN 3</div>
+    <h2 id="h-gen3">Pretrained language models <span class="zh-inline">预训练语言模型</span></h2>
+  </div>
+
+  <div class="sub">
+    <h3>8.1 The direction flips: extraction pattern vs verbalization template <span class="zh-inline">方向反转：抽取模板与关系说法模板</span></h3>
+    <figure>
+      <div class="fig-box">
+        <svg viewBox="0 0 800 250" role="img" aria-label="Two lanes. Extraction patterns go from text to a relation and are judged on real text. Verbalization templates go from a relation to text and are used for prompting and probing.">
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+          </defs>
+          <g font-size="13">
+            <text x="10" y="52" font-weight="600">Extraction pattern</text>
+            <text x="10" y="70" font-size="11" class="f-muted">text → relation</text>
+            <text x="10" y="88" font-size="11" class="zh-svg">抽取模板：文本 → 关系</text>
+            <rect x="160" y="35" width="180" height="50" rx="7" class="f-card s-rule" stroke-width="1.5"/>
+            <text x="250" y="65" text-anchor="middle" font-size="12">“fruits such as apples”</text>
+            <line x1="340" y1="60" x2="426" y2="60" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar2)"/>
+            <text x="383" y="50" text-anchor="middle" font-size="11" class="f-muted">match</text>
+            <rect x="430" y="35" width="210" height="50" rx="7" class="f-card s-hyper" stroke-width="1.5"/>
+            <text x="535" y="65" text-anchor="middle" font-size="11.5" class="mono">(apple, is-a, fruit)</text>
+            <text x="655" y="54" font-size="11" class="f-muted">judged on real text:</text>
+            <text x="655" y="70" font-size="11">precision, recall</text>
+            <text x="383" y="106" text-anchor="middle" font-size="11" class="mono f-trigger">pattern: Y such as X</text>
+
+            <line x1="10" y1="126" x2="790" y2="126" class="s-rule" stroke-width="1" stroke-dasharray="4 4"/>
+
+            <text x="10" y="167" font-weight="600">Verbalization template</text>
+            <text x="10" y="185" font-size="11" class="f-muted">relation → text</text>
+            <text x="10" y="203" font-size="11" class="zh-svg">关系说法模板：关系 → 文本</text>
+            <rect x="155" y="150" width="200" height="50" rx="7" class="f-card s-hyper" stroke-width="1.5"/>
+            <text x="255" y="180" text-anchor="middle" font-size="10.5" class="mono">(Paris, capital-of, France)</text>
+            <line x1="355" y1="175" x2="426" y2="175" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar2)"/>
+            <text x="383" y="165" text-anchor="middle" font-size="11" class="f-muted">fill</text>
+            <rect x="430" y="150" width="210" height="50" rx="7" class="f-card s-rule" stroke-width="1.5"/>
+            <text x="535" y="180" text-anchor="middle" font-size="12">“Paris is the capital of France.”</text>
+            <text x="655" y="169" font-size="11" class="f-muted">used for:</text>
+            <text x="655" y="185" font-size="11">prompts, probing,</text>
+            <text x="655" y="201" font-size="11">data generation</text>
+            <text x="383" y="222" text-anchor="middle" font-size="11" class="mono f-trigger">template: [X] is the capital of [Y]</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>The same kind of string can play either role. What differs is the direction and how quality is judged. A table that lists “X was founded by Y” for every relation in a knowledge base is a set of verbalizations; it was never tested as an extractor.
+        <span class="zh">同一类字符串可以扮演两种角色，区别在于方向和评判标准。一张为知识库每个关系写一句“X was founded by Y”的表，是关系说法模板的集合，从没被当作抽取器检验过。</span></figcaption>
+    </figure>
+  </div>
+
+  <div class="sub">
+    <h3>8.2 Fine-tuned encoders and generated triples <span class="zh-inline">微调编码器与生成三元组</span></h3>
+    <div class="grid g2">
+      <div class="card" style="display:grid;gap:8px;align-content:start">
+        <div class="kicker">Matching the Blanks · 2019</div>
+        <p class="annot"><span class="mono small">[E1]</span> <span class="ann hyper">Steve Jobs</span> <span class="mono small">[/E1]</span> founded <span class="mono small">[E2]</span> <span class="ann hypo">Apple</span> <span class="mono small">[/E2]</span> in 1976.</p>
+        <p>Baldini Soares et al. mark the two entities and read the relation from the marker tokens of a BERT encoder. Extra pretraining teaches the model that sentences sharing an entity pair tend to share a relation.</p>
+        <p class="zh">在输入中标出两个实体，从 BERT 中实体标记位置的表示读出关系。额外的预训练让模型学到：共享同一实体对的句子往往表达同一关系。</p>
+      </div>
+      <div class="card" style="display:grid;gap:8px;align-content:start">
+        <div class="kicker">REBEL · 2021</div>
+        <p class="mono" style="font-size:.85rem">&lt;triplet&gt; Apple &lt;subj&gt; Steve Jobs &lt;obj&gt; founded by</p>
+        <p>Huguet Cabot &amp; Navigli train a sequence-to-sequence model (BART) that writes the triples out as text, end to end. It points ahead to the generative extraction of Generation 4.</p>
+        <p class="zh">训练一个序列到序列模型（BART），端到端地把三元组直接写成文本。它预示了第四代的生成式抽取。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5.5 -->
+  <div class="sub">
+    <h3>8.3 Patterns as prompts, 2019–2023 <span class="zh-inline">模板变成 prompt</span></h3>
+    <div class="prose">
+      <p>The direction flips. Instead of mining text, a template is filled with a subject and a blank, and a language model predicts the blank. Templates become a way to measure what a model knows.</p>
+      <p class="zh">方向反转了。不再从文本里挖掘，而是把主语和空位填进模板，让语言模型预测空位。模板变成了测量模型知道什么的工具。</p>
+    </div>
+    <div class="grid g3">
+      <div class="card" style="display:grid;gap:8px;align-content:start">
+        <div class="kicker">Probe · LAMA 2019</div>
+        <p class="mono" style="font-size:.9rem">Paris is the capital of <span class="ann hypo">[MASK]</span>.</p>
+        <p class="small">A knowledge-base triple is verbalized with a fixed template; the model fills the blank. · 用固定模板把知识库三元组写成句子，让模型填空。</p>
+      </div>
+      <div class="card" style="display:grid;gap:8px;align-content:start">
+        <div class="kicker">Consistency · ParaRel 2021</div>
+        <p class="mono" style="font-size:.85rem">Paris is the capital of [MASK].<br>[MASK]'s capital is Paris.<br>The capital city of [MASK] is Paris.</p>
+        <p class="small">One fact, three wordings. ParaRel measures how often predictions agree across paraphrases like these; for the models tested, often they did not. · 同一事实三种问法，模型的回答经常不一致。</p>
+      </div>
+      <div class="card" style="display:grid;gap:8px;align-content:start">
+        <div class="kicker">Anchored prompts · 2023</div>
+        <div class="prompt-lines">
+          <span>[MASK] such as keas.<br>→ fish <span class="no">✗</span></span>
+          <span>A kea is a [MASK].<br>→ fish <span class="no">✗</span></span>
+          <span>[MASK] such as keas and parrots.<br>→ birds <span class="ok">✓</span></span>
+        </div>
+        <p class="small">Adding a known co-hyponym as an anchor helps, most of all for rare or abstract concepts. Example adapted from Liu, Cohn &amp; Frermann (2023), Fig. 1. · 加入一个已知的共下位词作锚点更有效，对罕见或抽象概念尤其明显。</p>
+      </div>
+    </div>
+    <div class="prose">
+      <p>LPAQA (Jiang et al., 2020) and AutoPrompt (Shin et al., 2020) mined or optimized prompts automatically. Later work found that prompt-based results can be driven by bias in the prompt itself rather than by the model’s knowledge (Cao et al., 2021). Hypert (2023) continued pretraining BERT on sentences matched by Hearst patterns. Tikhomirov &amp; Loukachevitch found that the prompts that work best for LLMs track the classic patterns, so prompts can be screened with small models first.</p>
+      <p class="zh">LPAQA 和 AutoPrompt 自动挖掘或优化 prompt。后来的研究发现，基于 prompt 的结果可能主要由 prompt 自身的偏置决定，而不是模型的知识。Hypert (2023) 用 Hearst 模板匹配到的句子对 BERT 做继续预训练。Tikhomirov 和 Loukachevitch 发现，对大模型最有效的 prompt 与经典模板高度一致，所以可以先用小模型筛选 prompt。</p>
+    </div>
+  </div>
+
+</section>
+
+<div class="part pg4" role="note">
+  <div class="kicker">Part IV · Generation 4 · 2023–</div>
+  <h2 class="part-title">Large language models</h2>
+  <p>LLMs generate pairs, taxonomies and knowledge graphs directly, by prompting or fine-tuning, and write rules for other systems to run. Section 9.</p>
+  <p class="zh">第四部分 · 第四代：大模型。大模型通过 prompt 或微调直接生成词对、分类体系和知识图谱，还会编写规则交给其他系统执行。第 9 节。</p>
+</div>
+
+
+<!-- 7 LATEST -->
+<section id="latest" aria-labelledby="h-latest">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 9 · GEN 4</div>
+    <h2 id="h-latest">LLMs and progress in 2024–2026 <span class="zh-inline">大模型与 2024–2026 最新进展</span></h2>
+  </div>
+  <figure>
+    <div class="fig-box overview">
+      <svg viewBox="0 0 800 236" role="img" aria-label="Seven threads of recent work in three groups. Build structure with LLMs: fine-tuned taxonomy models, generative taxonomy building, text to knowledge graph. Measure what LLMs know: LLMs versus taxonomies, the LLMs4OL shared task, rethinking probing. Keep extraction auditable: LLM-written rules and rule-guided extraction.">
+        <g font-size="12">
+          <rect x="10" y="8" width="240" height="40" rx="8" class="f-tint s-hyper" stroke-width="1.6"/>
+          <text x="130" y="26" text-anchor="middle" font-weight="600" class="f-hyper">Build structure with LLMs</text><text x="130" y="41" text-anchor="middle" font-size="10" class="zh-svg">用大模型构建结构</text>
+          <rect x="280" y="8" width="240" height="40" rx="8" class="f-tint s-hypo" stroke-width="1.6"/>
+          <text x="400" y="26" text-anchor="middle" font-weight="600" class="f-hypo">Measure what LLMs know</text><text x="400" y="41" text-anchor="middle" font-size="10" class="zh-svg">测量大模型的知识</text>
+          <rect x="550" y="8" width="240" height="40" rx="8" class="f-tint s-trigger" stroke-width="1.6"/>
+          <text x="670" y="26" text-anchor="middle" font-weight="600" class="f-trigger">Keep extraction auditable</text><text x="670" y="41" text-anchor="middle" font-size="10" class="zh-svg">保持抽取可审查</text>
+
+          <g class="s-rule" stroke-width="1.2">
+            <line x1="24" y1="48" x2="24" y2="201"/><line x1="294" y1="48" x2="294" y2="201"/><line x1="564" y1="48" x2="564" y2="143"/>
+          </g>
+
+          <rect x="34" y="60" width="216" height="50" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+          <text x="46" y="81" font-weight="600" font-size="11.5">9.1 Fine-tuned taxonomy models</text><text x="46" y="98" font-size="10.5" class="mono f-muted">TaxoLLaMA</text>
+          <rect x="34" y="118" width="216" height="50" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+          <text x="46" y="139" font-weight="600" font-size="11.5">9.2 Generative taxonomies</text><text x="46" y="156" font-size="10.5" class="mono f-muted">Chain-of-Layer, CodeTaxo</text>
+          <rect x="34" y="176" width="216" height="50" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+          <text x="46" y="197" font-weight="600" font-size="11.5">9.5 Text to knowledge graph</text><text x="46" y="214" font-size="10.5" class="mono f-muted">KGGen</text>
+
+          <rect x="304" y="60" width="216" height="50" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+          <text x="316" y="81" font-weight="600" font-size="11.5">9.3 LLMs vs taxonomies</text><text x="316" y="98" font-size="10.5" class="mono f-muted">TaxoGlimpse</text>
+          <rect x="304" y="118" width="216" height="50" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+          <text x="316" y="139" font-weight="600" font-size="11.5">9.4 Shared-task benchmark</text><text x="316" y="156" font-size="10.5" class="mono f-muted">LLMs4OL 2024–2026</text>
+          <rect x="304" y="176" width="216" height="50" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+          <text x="316" y="197" font-weight="600" font-size="11.5">9.7 Rethinking probing</text><text x="316" y="214" font-size="10.5" class="mono f-muted">BELIEF, ZP-LKE</text>
+
+          <rect x="574" y="60" width="216" height="50" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+          <text x="586" y="81" font-weight="600" font-size="11.5">9.6 LLM-written rules</text><text x="586" y="98" font-size="10.5" class="mono f-muted">RuleChef</text>
+          <rect x="574" y="118" width="216" height="50" rx="7" class="f-card s-rule" stroke-width="1.3"/>
+          <text x="586" y="139" font-weight="600" font-size="11.5">9.6 Rule-guided extraction</text><text x="586" y="156" font-size="10.5" class="mono f-muted">NAACL 2025, Guo et al.</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><span class="ov-tag">Overview</span> Seven threads of recent work, grouped by what they do. The cards in 9.1–9.7 give the findings and links.
+      <span class="zh">总览：近期研究的七条线索，按作用分成三组。9.1–9.7 的卡片给出具体结论和链接。</span></figcaption>
+  </figure>
+
+  <div class="sub">
+    <h3>9.1 LLMs solve taxonomy tasks directly <span class="zh-inline">大模型直接做分类体系任务</span></h3>
+    <div class="news">
+      <div class="card"><h4>TaxoLLaMA <span class="venue">ACL 2024</span> <span class="venue">Semantic Web 2026</span></h4>
+        <p>LLaMA-2-7B fine-tuned on WordNet hypernym pairs. Across hypernym discovery, taxonomy enrichment, taxonomy construction and lexical entailment it reached state of the art on <span class="kv">11 of 16</span> tasks and second place on 4. About <span class="kv">75%</span> of its hypernym-discovery errors were hypernyms that were too general.</p>
+        <p class="zh">在 WordNet 上下位词对上微调的 LLaMA-2-7B。在四类任务的 16 个任务中拿下 11 项 SOTA、4 项第二。上位词发现中约 75% 的错误是给出的上位词过于宽泛。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2403.09207">arXiv 2403.09207</a> · <a href="https://www.semantic-web-journal.net/content/large-language-models-creation-enrichment-and-evaluation-taxonomic-graphs-0">journal version</a></p></div>
+      <div class="card"><h4>Sister terms leak into training <span class="venue">2025</span></h4>
+        <p>Sadkovskii, Loukachevitch &amp; Grishin study the bias that co-hyponyms of test items, left in WordNet-based training data, introduce into hypernym-discovery scores, beyond the usual removal of the test items themselves.</p>
+        <p class="zh">研究训练数据中残留的测试项共下位词（兄弟节点）给上位词发现评分带来的偏差，这超出了只删除测试项本身的常规做法。</p>
+        <p class="src"><a href="https://imiss.msu.ru/wp-content/uploads/2025/12/p146.pdf">paper (PDF)</a></p></div>
+      <div class="card"><h4>LLM prompts track the classic patterns <span class="venue">2024</span></h4>
+        <p>Tikhomirov &amp; Loukachevitch found a strong correlation between how well a prompt works for hypernym prediction and the classic Hearst patterns it is built from, so prompt selection can start on small models.</p>
+        <p class="zh">发现 prompt 在上位词预测上的效果与其所基于的经典模板高度相关，所以可以先在小模型上筛选 prompt。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2401.04515">arXiv 2401.04515</a></p></div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>9.2 Generative taxonomy construction and expansion <span class="zh-inline">生成式分类体系构建与扩展</span></h3>
+    <div class="news">
+      <div class="card"><h4>Chain-of-Layer <span class="venue">CIKM 2024</span></h4>
+        <p>LLMs asked for a whole taxonomy at once insert unrelated entities. Chain-of-Layer builds it one layer at a time in a hierarchical numbering format and filters each layer with an ensemble ranker. It follows TaxonomyGPT (Chen et al., 2023), the first attempt to prompt LLMs for hierarchical relations.</p>
+        <p class="zh">一次性让大模型生成整个分类体系会混入无关实体。Chain-of-Layer 用层级编号格式逐层构建，每层用集成排序过滤。它的前身是 TaxonomyGPT，最早用 prompt 让大模型预测层级关系。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2402.07386">arXiv 2402.07386</a></p></div>
+      <div class="card"><h4>CodeTaxo <span class="venue">ACL Findings 2025</span></h4>
+        <p>Represents the taxonomy as Python <code>Entity</code> objects and turns expansion into code completion, e.g. <code>thermochemistry.add_parent(chemistry)</code>.</p>
+        <p class="zh">把分类体系表示成 Python Entity 对象，把扩展任务变成代码补全。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2408.09070">arXiv 2408.09070</a></p></div>
+      <div class="card"><h4>TaxoAdapt and BoostTaxo <span class="venue">2025</span> <span class="venue">2026</span></h4>
+        <p>TaxoAdapt (Kargupta et al., 2025) adjusts taxonomy width and depth to the topic distribution of a scientific corpus. BoostTaxo (2026) lets a small LLM filter candidate parents, a large LLM rank them, and structural features calibrate the edges, all zero-shot.</p>
+        <p class="zh">TaxoAdapt 根据科学文献的主题分布调整分类体系的宽度和深度。BoostTaxo 用小模型筛选候选父节点、大模型排序打分，再用结构特征校准边，全程零样本。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2605.12520">BoostTaxo, arXiv 2605.12520</a></p></div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>9.3 Can LLMs replace taxonomies? <span class="zh-inline">大模型能否替代分类体系</span></h3>
+    <div class="news">
+      <div class="card"><h4>TaxoGlimpse <span class="venue">VLDB 2024</span></h4>
+        <p>Eighteen LLMs on ten taxonomies, from shopping to biology. They are reliable on common domains and weak on specialized ones and on leaf-level entities; in most taxonomies accuracy falls from root to leaf.</p>
+        <p class="zh">18 个大模型、10 个分类体系（从购物到生物）。在通用领域可靠，在专业领域和叶子层实体上表现差；大多数分类体系中，准确率从根到叶逐层下降。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2406.11131">arXiv 2406.11131</a></p></div>
+      <div class="card"><h4>Models vs humans on semantic relations <span class="venue">2024–25</span></h4>
+        <p>Cao et al. compared six pretrained models with humans on several semantic relations and found a significant knowledge gap. LLM-Hype (VLDB 2025 workshop) offers a targeted framework for hypernym–hyponym evaluation.</p>
+        <p class="zh">Cao 等人比较六个预训练模型与人类在多种语义关系上的知识，发现差距明显。LLM-Hype 提供了专门评估上下位推理的框架。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2412.01131">arXiv 2412.01131</a> · <a href="https://www.vldb.org/2025/Workshops/VLDB-Workshops-2025/LLM+Graph/LLMGraph-4.pdf">LLM-Hype (PDF)</a></p></div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>9.4 Ontology learning benchmark: LLMs4OL <span class="zh-inline">本体学习评测</span></h3>
+    <div class="news">
+      <div class="card"><h4>LLMs4OL 2025 <span class="venue">ISWC 2025 · Nara</span></h4>
+        <p>Hybrid pipelines that combined commercial LLMs with domain-tuned embeddings and fine-tuning gave the strongest overall results.</p>
+        <p class="zh">把商业大模型与领域调优嵌入、微调方法结合的混合流水线整体效果最好。</p>
+        <p class="src"><a href="https://www.tib-op.org/ojs/index.php/ocp/article/view/2913">overview paper</a></p></div>
+      <div class="card"><h4>LLMs4OL 2026 <span class="venue">ISWC 2026 · Bari, 25–29 Oct</span></h4>
+        <p>Three tasks: build an ontology end to end from raw text, extend an existing ontology, and induce a taxonomy for an unseen domain. One participating team reported that its LLM pipeline favored hierarchical relations and extracted no non-taxonomic relations at all.</p>
+        <p class="zh">三个任务：从原始文本端到端构建本体、扩展已有本体、为未见领域归纳分类体系。一个参赛团队报告其大模型流水线偏向层级关系，最终一条非分类关系都没抽出来。</p>
+        <p class="src"><a href="https://sites.google.com/view/llms4ol2026">challenge site</a> · <a href="https://arxiv.org/abs/2608.27101">team report</a></p></div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>9.5 From text to knowledge graphs <span class="zh-inline">从文本到知识图谱</span></h3>
+    <div class="news">
+      <div class="card"><h4>KGGen <span class="venue">NeurIPS 2025</span></h4>
+        <p>An LLM extracts (subject, predicate, object) triples, then iterative LLM-guided clustering merges synonymous entities and relations to reduce sparsity. On the MINE benchmark released with it, KGGen scored <span class="kv">18.3</span> points above GraphRAG and <span class="kv">36.2</span> above OpenIE.</p>
+        <p class="zh">大模型抽取三元组，再用迭代聚类合并同义实体和关系，缓解稀疏。在其配套的 MINE 基准上，比 GraphRAG 高 18.3 个百分点，比 OpenIE 高 36.2 个百分点。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2502.09956">arXiv 2502.09956</a></p></div>
+      <div class="card"><h4>Surveys of generative IE <span class="venue">2024–25</span></h4>
+        <p>Generative information extraction now covers entity, relation and event extraction, plus unified models for all of them.</p>
+        <p class="zh">生成式信息抽取已覆盖实体、关系、事件抽取，以及统一多任务的模型。</p>
+        <p class="src"><a href="https://aclanthology.org/2025.coling-main.324/">Zhang et al., COLING 2025</a> · <a href="https://arxiv.org/abs/2312.17617">Xu et al., 2024</a> · <a href="https://arxiv.org/abs/2208.08690">Open IE survey, 2024</a></p></div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>9.6 Rules come back, written by LLMs <span class="zh-inline">规则回归：由大模型来写</span></h3>
+    <div class="news">
+      <div class="card"><h4>RuleChef <span class="venue">2026</span></h4>
+        <p>LLMs write executable rules for classification, NER or relation extraction and repair them on held-out failures. Only the rules run at inference, so the system is fast, deterministic and inspectable.</p>
+        <p class="zh">大模型为分类、NER、关系抽取编写可执行规则，并根据验证集上的失败案例修补。推理时只运行规则，所以系统快速、确定、可检查。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2607.01293">arXiv 2607.01293</a></p></div>
+      <div class="card"><h4>Rules that guide LLM relation extraction <span class="venue">NAACL 2025</span> <span class="venue">2025</span></h4>
+        <p>Low-resource RE with labeling rules that pair a contextual pattern with a relation label, used to steer LLM reasoning and annotation. Guo et al. use reinforcement learning to reward outputs that name the key relation words, the lexical triggers of Section 3.</p>
+        <p class="zh">用“上下文模式 + 关系标签”形式的规则引导大模型推理和标注。Guo 等人用强化学习奖励点出关键关系词的输出，这些关系词就是第 3 节说的词汇型触发词。</p>
+        <p class="src"><a href="https://aclanthology.org/2025.naacl-long.70/">NAACL 2025</a> · <a href="https://arxiv.org/abs/2510.06198">arXiv 2510.06198</a></p></div>
+    </div>
+  </div>
+
+  <div class="sub">
+    <h3>9.7 Rethinking template-based probing <span class="zh-inline">反思基于模板的探测</span></h3>
+    <div class="news">
+      <div class="card"><h4>BELIEF and MyriadLAMA <span class="venue">2024–25</span></h4>
+        <p>Many prompts per fact, so accuracy, consistency and overconfidence can be measured instead of one accuracy number.</p>
+        <p class="zh">每个事实配多个 prompt，测量准确率、一致性和过度自信，而不只是一个准确率。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2406.12277">arXiv 2406.12277</a></p></div>
+      <div class="card"><h4>Zero-prompt estimation and fluent templates <span class="venue">WSDM 2025</span> <span class="venue">EMNLP 2025</span></h4>
+        <p>ZP-LKE drops templates and shows the model several (x, y) examples so it infers the relation itself. Semenov &amp; Sennrich show that translated mLAMA templates ignore the grammar of inserted entities, which leads such benchmarks to underestimate multilingual knowledge.</p>
+        <p class="zh">ZP-LKE 不用模板，直接给模型多个 (x, y) 示例让它自己推断关系。Semenov 和 Sennrich 指出 mLAMA 的翻译模板忽略了填入实体的语法，导致这类基准低估了模型的多语言知识。</p>
+        <p class="src"><a href="https://arxiv.org/abs/2404.12957">ZP-LKE</a> · <a href="https://arxiv.org/abs/2510.15115">arXiv 2510.15115</a></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 PROBLEMS -->
+<section id="problems" aria-labelledby="h-prob">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 10 · ACROSS GENERATIONS</div>
+    <h2 id="h-prob">Problems that outlast every generation <span class="zh-inline">贯穿各代的核心问题</span></h2>
+  </div>
+  <div class="prose">
+    <p>Each problem below is shown in its first-generation form, where it is easiest to see. Section 11 shows the form it takes with large language models.</p>
+    <p class="zh">下面每个问题都以第一代的形式展示，因为那里最容易看清。第 11 节给出它们在大模型时代的形式。</p>
+  </div>
+  <figure>
+    <div class="fig-box overview">
+      <svg viewBox="0 0 800 186" role="img" aria-label="The eight core problems placed at the stage where each arises: sparsity and paraphrase coverage in corpus evidence; precision versus recall and semantic drift in patterns; ambiguity, noun-phrase boundaries and context in extracted pairs; prompt sensitivity when probing language models.">
+        <defs>
+          <marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        </defs>
+        <g font-size="12.5" text-anchor="middle">
+          <rect x="10" y="10" width="180" height="52" rx="8" class="f-tint s-rule" stroke-width="1.5"/>
+          <text x="100" y="32" font-weight="600">Corpus evidence</text><text x="100" y="50" font-size="10.5" class="zh-svg">语料证据</text>
+          <rect x="210" y="10" width="180" height="52" rx="8" class="f-tint s-trigger" stroke-width="1.5"/>
+          <text x="300" y="32" font-weight="600">Patterns</text><text x="300" y="50" font-size="10.5" class="zh-svg">模板</text>
+          <rect x="410" y="10" width="180" height="52" rx="8" class="f-tint s-rule" stroke-width="1.5"/>
+          <text x="500" y="32" font-weight="600">Extracted pairs</text><text x="500" y="50" font-size="10.5" class="zh-svg">抽取结果</text>
+          <rect x="610" y="10" width="180" height="52" rx="8" class="f-tint s-hyper" stroke-width="1.5"/>
+          <text x="700" y="32" font-weight="600">Probing LMs</text><text x="700" y="50" font-size="10.5" class="zh-svg">探测语言模型</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.4">
+          <line x1="190" y1="36" x2="206" y2="36" marker-end="url(#ar6)"/><line x1="390" y1="36" x2="406" y2="36" marker-end="url(#ar6)"/><line x1="590" y1="36" x2="606" y2="36" marker-end="url(#ar6)"/>
+        </g>
+        <g class="s-bad" stroke-width="1" stroke-dasharray="3 3">
+          <line x1="100" y1="62" x2="100" y2="82"/><line x1="300" y1="62" x2="300" y2="82"/><line x1="500" y1="62" x2="500" y2="82"/><line x1="700" y1="62" x2="700" y2="82"/>
+        </g>
+        <g font-size="11.5" text-anchor="middle" class="f-bad">
+          <rect x="15" y="82" width="170" height="26" rx="13" class="f-card s-bad" stroke-width="1.2"/><text x="100" y="99">Sparsity</text>
+          <rect x="15" y="116" width="170" height="26" rx="13" class="f-card s-bad" stroke-width="1.2"/><text x="100" y="133">Paraphrase coverage</text>
+          <rect x="215" y="82" width="170" height="26" rx="13" class="f-card s-bad" stroke-width="1.2"/><text x="300" y="99">Precision vs recall</text>
+          <rect x="215" y="116" width="170" height="26" rx="13" class="f-card s-bad" stroke-width="1.2"/><text x="300" y="133">Semantic drift</text>
+          <rect x="415" y="82" width="170" height="26" rx="13" class="f-card s-bad" stroke-width="1.2"/><text x="500" y="99">Ambiguity</text>
+          <rect x="415" y="116" width="170" height="26" rx="13" class="f-card s-bad" stroke-width="1.2"/><text x="500" y="133">Noun-phrase boundaries</text>
+          <rect x="415" y="150" width="170" height="26" rx="13" class="f-card s-bad" stroke-width="1.2"/><text x="500" y="167">Context</text>
+          <rect x="615" y="82" width="170" height="26" rx="13" class="f-card s-bad" stroke-width="1.2"/><text x="700" y="99">Prompt sensitivity</text>
+        </g>
+      </svg>
+    </div>
+    <figcaption><span class="ov-tag">Overview</span> The eight problems below, placed at the stage where each one arises. Each card then gives a concrete failure and the usual response.
+      <span class="zh">总览：下面八个问题分别出现在哪个环节。之后每张卡片给出一个具体的失败案例和常见对策。</span></figcaption>
+  </figure>
+  <div class="grid g2">
+    <div class="card prob"><h4>Precision vs recall <span class="zh-inline">精度与召回</span></h4>
+      <p class="x"><span class="tag bad">Failure</span><br>Specific patterns are precise but rare. Generic ones fire everywhere: <span class="pat">X is a Y</span> on <em>Python is a good choice</em> yields (Python, is-a, good choice).<span class="zh">具体模板准但少；泛化模板到处命中，会从 Python is a good choice 抽出错误关系。</span></p>
+      <p class="fix"><span class="tag good">Response</span><br>Score pattern reliability (Espresso); add semantic constraints (Girju et al.).<span class="zh">给模板打可靠度分；加语义约束。</span></p></div>
+    <div class="card prob"><h4>Sparsity <span class="zh-inline">稀疏</span></h4>
+      <p class="x"><span class="tag bad">Failure</span><br><em>poodle</em> may never appear in “animals such as poodles”, so no pattern ever links it to <em>animal</em>.<span class="zh">poodle 可能从未出现在 animals such as poodles 里，没有任何模板能把它和 animal 连起来。</span></p>
+      <p class="fix"><span class="tag good">Response</span><br>Low-rank smoothing (Roller et al. 2018); combine with embeddings (HypeNET).<span class="zh">低秩平滑；结合词向量。</span></p></div>
+    <div class="card prob"><h4>Semantic drift <span class="zh-inline">语义漂移</span></h4>
+      <p class="x"><span class="tag bad">Failure</span><br>cities → <span class="pat">a trip to X</span> → the beach → <span class="pat">relax on X</span> → the balcony.<span class="zh">城市 → “a trip to X” → 海滩 → “relax on X” → 阳台。</span></p>
+      <p class="fix"><span class="tag good">Response</span><br>Confidence filtering; mutual exclusion between classes; doubly-anchored patterns.<span class="zh">置信度过滤；类别互斥；双锚定模板。</span></p></div>
+    <div class="card prob"><h4>Paraphrase coverage <span class="zh-inline">改写覆盖</span></h4>
+      <p class="x"><span class="tag bad">Failure</span><br>One relation, many forms: bought, took over, snapped up, now owned by. A single pattern catches one.<span class="zh">一个关系有许多说法，一条模板只抓得到一种。</span></p>
+      <p class="fix"><span class="tag good">Response</span><br>Bootstrapping; DIRT paraphrase rules; LLM paraphrasing today.<span class="zh">bootstrapping；DIRT 改写规则；现在多用大模型改写。</span></p></div>
+    <div class="card prob"><h4>Ambiguity <span class="zh-inline">歧义</span></h4>
+      <p class="x"><span class="tag bad">Failure</span><br><span class="pat">Y of X</span>: <em>the engine of the car</em> is part-whole, <em>a cup of tea</em> is a measure, <em>the city of Paris</em> is apposition.<span class="zh">同样是 of：部分-整体、计量、同位，形式相同含义不同。</span></p>
+      <p class="fix"><span class="tag good">Response</span><br>Semantic constraints on the arguments; aggregate evidence over many sentences.<span class="zh">对论元加语义约束；在大量句子上聚合证据。</span></p></div>
+    <div class="card prob"><h4>Noun-phrase boundaries <span class="zh-inline">名词短语边界</span></h4>
+      <p class="x"><span class="tag bad">Failure</span><br><em>most European countries, especially France</em>: the hypernym should be <em>European country</em>, not <em>most European countries</em> or just <em>country</em>.<span class="zh">上位词应是 European country，抽多了或抽少了都不对。</span></p>
+      <p class="fix"><span class="tag good">Response</span><br>Parse the sentence; keep the head noun plus the modifiers that matter.<span class="zh">做句法分析，保留中心词和必要的修饰语。</span></p></div>
+    <div class="card prob"><h4>Context <span class="zh-inline">语境</span></h4>
+      <p class="x"><span class="tag bad">Failure</span><br><em>Early naturalists grouped whales, dolphins and other fish together</em> yields whale is-a fish. The sentence reports a belief, not a fact.<span class="zh">这句话转述的是观点而非事实，却抽出了“鲸鱼是鱼”。</span></p>
+      <p class="fix"><span class="tag good">Response</span><br>Filter negation, hedging and reported belief; trust only pairs seen often.<span class="zh">过滤否定、模糊表达和转述；只信高频词对。</span></p></div>
+    <div class="card prob"><h4>Prompt sensitivity (LM era) <span class="zh-inline">prompt 敏感</span></h4>
+      <p class="x"><span class="tag bad">Failure</span><br>Rewording a prompt for the same fact changes the model’s answer.<span class="zh">同一事实换个问法，模型答案就变。</span></p>
+      <p class="fix"><span class="tag good">Response</span><br>Aggregate over many prompts; report consistency (ParaRel, BELIEF).<span class="zh">多 prompt 聚合；报告一致性指标。</span></p></div>
+  </div>
+</section>
+
+<!-- 8 TRENDS -->
+<section id="trends" aria-labelledby="h-trends">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 11 · ACROSS GENERATIONS</div>
+    <h2 id="h-trends">Old problems, new forms <span class="zh-inline">经典问题在大模型时代的新形式</span></h2>
+  </div>
+  <div class="map">
+    <div class="map-row map-head"><span>Classic problem</span><span></span><span>Form in the LLM era</span><span>Seen in</span></div>
+    <div class="map-row"><span>Sparsity, long tail<span class="zh">稀疏、长尾</span></span><span class="arr" aria-hidden="true">→</span><span>Accuracy drops in specialized domains and at leaf nodes<span class="zh">专业领域和叶子节点准确率下降</span></span><span class="who">TaxoGlimpse</span></div>
+    <div class="map-row"><span>Semantic drift<span class="zh">语义漂移</span></span><span class="arr" aria-hidden="true">→</span><span>Unrelated entities inserted into generated taxonomies<span class="zh">生成的分类体系混入无关实体</span></span><span class="who">Chain-of-Layer</span></div>
+    <div class="map-row"><span>Paraphrase coverage<span class="zh">改写覆盖</span></span><span class="arr" aria-hidden="true">→</span><span>Answers change with prompt wording<span class="zh">答案随 prompt 措辞变化</span></span><span class="who">ParaRel, MyriadLAMA</span></div>
+    <div class="map-row"><span>Synonym merging<span class="zh">同义归并</span></span><span class="arr" aria-hidden="true">→</span><span>Duplicate entity and relation names in extracted graphs<span class="zh">抽出的图中实体名、关系名重复</span></span><span class="who">KGGen</span></div>
+    <div class="map-row"><span>Interpretability<span class="zh">可解释性</span></span><span class="arr" aria-hidden="true">→</span><span>Black-box extraction is hard to audit and maintain<span class="zh">黑盒抽取难以审查和维护</span></span><span class="who">RuleChef, rule-guided RE</span></div>
+  </div>
+  <div class="grid g3">
+    <div class="card"><div class="kicker">Takeaway 1</div><p>Same task, new tools. All four generations produce (x, relation, y) facts from text; what changes is how.</p><p class="zh">任务不变，工具在变。四代方法都是从文本中产出 (x, 关系, y) 事实，变的是做法。</p></div>
+    <div class="card"><div class="kicker">Takeaway 2</div><p>Patterns never left. They became features and supervision in Gen 2, prompts and probes in Gen 3, and LLM-written rules in Gen 4.</p><p class="zh">模板从未离开：在第二代成为特征和监督信号，在第三代成为 prompt 和探测工具，在第四代成为大模型编写的规则。</p></div>
+    <div class="card"><div class="kicker">Takeaway 3</div><p>Still open: specialized domains and leaf concepts, non-taxonomic relations, and evaluation that can be trusted.</p><p class="zh">尚未解决：专业领域和叶子概念、非分类关系，以及可信的评测。</p></div>
+  </div>
+
+</section>
+
+<!-- 12 READING -->
+<section id="reading" aria-labelledby="h-read">
+  <div class="sec-head">
+    <div class="sec-num">SECTION 12</div>
+    <h2 id="h-read">Reading list by generation <span class="zh-inline">按代划分的阅读清单</span></h2>
+  </div>
+  <div class="reading">
+    <div><h3><span class="gen-tag g1">Gen 1</span> Patterns <span class="zh-inline">模板</span></h3>
+      <ol>
+        <li><span class="yr">1992</span> Hearst, <a href="https://aclanthology.org/C92-2082/"><em>Automatic Acquisition of Hyponyms from Large Text Corpora</em></a>. COLING.</li>
+        <li><span class="yr">2000</span> Agichtein &amp; Gravano, <a href="https://doi.org/10.1145/336597.336644"><em>Snowball: Extracting Relations from Large Plain-Text Collections</em></a>. ACM Digital Libraries.</li>
+        <li><span class="yr">2006</span> Pantel &amp; Pennacchiotti, <a href="https://aclanthology.org/P06-1015/"><em>Espresso: Leveraging Generic Patterns for Automatically Harvesting Semantic Relations</em></a>. COLING-ACL.</li>
+        <li><span class="yr">2011</span> Fader, Soderland &amp; Etzioni, <a href="https://aclanthology.org/D11-1142/"><em>Identifying Relations for Open Information Extraction</em></a> (ReVerb). EMNLP.</li>
+      </ol></div>
+    <div><h3><span class="gen-tag g2">Gen 2</span> Statistical &amp; neural <span class="zh-inline">统计与神经学习</span></h3>
+      <ol start="5">
+        <li><span class="yr">2005</span> Snow, Jurafsky &amp; Ng, <a href="https://proceedings.neurips.cc/paper/2004/hash/358aee4cc897452c00244351e4d91f69-Abstract.html"><em>Learning Syntactic Patterns for Automatic Hypernym Discovery</em></a>. NIPS 17.</li>
+        <li><span class="yr">2009</span> Mintz et al., <a href="https://aclanthology.org/P09-1113/"><em>Distant Supervision for Relation Extraction without Labeled Data</em></a>. ACL-IJCNLP.</li>
+        <li><span class="yr">2015</span> Levy et al., <a href="https://aclanthology.org/N15-1098/"><em>Do Supervised Distributional Methods Really Learn Lexical Inference Relations?</em></a> NAACL.</li>
+        <li><span class="yr">2016</span> Shwartz, Goldberg &amp; Dagan, <a href="https://doi.org/10.18653/v1/P16-1226"><em>Improving Hypernymy Detection with an Integrated Path-based and Distributional Method</em></a> (HypeNET). ACL.</li>
+        <li><span class="yr">2018</span> Roller, Kiela &amp; Nickel, <a href="https://arxiv.org/abs/1806.03191"><em>Hearst Patterns Revisited</em></a>. ACL.</li>
+      </ol></div>
+    <div><h3><span class="gen-tag g3">Gen 3</span> Pretrained LMs <span class="zh-inline">预训练语言模型</span></h3>
+      <ol start="10">
+        <li><span class="yr">2019</span> Petroni et al., <a href="https://aclanthology.org/D19-1250/"><em>Language Models as Knowledge Bases?</em></a> (LAMA). EMNLP-IJCNLP.</li>
+        <li><span class="yr">2019</span> Baldini Soares et al., <a href="https://aclanthology.org/P19-1279/"><em>Matching the Blanks: Distributional Similarity for Relation Learning</em></a>. ACL.</li>
+        <li><span class="yr">2021</span> Elazar et al., <a href="https://aclanthology.org/2021.tacl-1.60/"><em>Measuring and Improving Consistency in Pretrained Language Models</em></a> (ParaRel). TACL.</li>
+        <li><span class="yr">2023</span> Liu, Cohn &amp; Frermann, <a href="https://aclanthology.org/2023.starsem-1.18/"><em>Seeking Clozure</em></a>. *SEM.</li>
+      </ol></div>
+    <div><h3><span class="gen-tag g4">Gen 4</span> LLMs <span class="zh-inline">大模型</span></h3>
+      <ol start="14">
+        <li><span class="yr">2024</span> Moskvoretskii et al., <a href="https://arxiv.org/abs/2403.09207"><em>TaxoLLaMA</em></a>. ACL.</li>
+        <li><span class="yr">2024</span> Zeng et al., <a href="https://arxiv.org/abs/2402.07386"><em>Chain-of-Layer</em></a>. CIKM.</li>
+        <li><span class="yr">2024</span> Sun et al., <a href="https://arxiv.org/abs/2406.11131"><em>Are Large Language Models a Good Replacement of Taxonomies?</em></a> VLDB.</li>
+        <li><span class="yr">2025</span> Zeng et al., <a href="https://arxiv.org/abs/2408.09070"><em>CodeTaxo</em></a>. ACL Findings.</li>
+        <li><span class="yr">2025</span> Babaei Giglou et al., <a href="https://www.tib-op.org/ojs/index.php/ocp/article/view/2913"><em>LLMs4OL 2025 Overview</em></a>. ISWC.</li>
+        <li><span class="yr">2025</span> Mo et al., <a href="https://arxiv.org/abs/2502.09956"><em>KGGen</em></a>. NeurIPS.</li>
+      </ol></div>
+    <div><h3>Surveys <span class="zh-inline">综述</span></h3>
+      <ol start="20">
+        <li><span class="yr">2024</span> Liu et al., <a href="https://arxiv.org/abs/2208.08690"><em>A Survey on Open Information Extraction from Rule-based Model to Large Language Model</em></a>. EMNLP Findings.</li>
+        <li><span class="yr">2025</span> Zhang et al., <a href="https://aclanthology.org/2025.coling-main.324/"><em>A Survey of Generative Information Extraction</em></a>. COLING.</li>
+      </ol></div>
+  </div>
+</section>
+
+<footer>
+  <p>Examples marked “illustrative” are constructed for teaching; all diagrams were drawn for this page. Findings in Section 7 are summarized from the linked papers.</p>
+  <p class="zh">标注“示意”的例子为教学而构造；所有图示为本页绘制。第 7 节的结论摘自所链接的论文。</p>
+</footer>
+</main>
+</div>
+<script>
+/* ---------- Simplified Hearst-pattern matcher (no parser) ---------- */
+const DET = new Set('the a an some many most all other several various certain these those this that any its their his her our my your'.split(' '));
+const CLAUSE = new Set(('is are was were has have had can could will would may might must should need needs do does did which who whom whose that where when while because ' +
+  'reduce reduces cause causes use uses joined join stood stand help helps remain remains include includes contain contains provide provides make makes grow grows live lives ' +
+  'eat eats require requires become became show shows lead leads affect affects').split(' '));
+const STOP = new Set([...DET, ...CLAUSE, ...'and or of in on at with for to from by into as also too together very more less than not no he she they we i it you'.split(' ')]);
+
+function words(s) { return s.trim().split(/\s+/).filter(Boolean); }
+function stripDet(w) { w = w.slice(); while (w.length > 1 && DET.has(w[0].toLowerCase()) && !STOP.has(w[1].toLowerCase())) w.shift(); return w; }
+function npBefore(pre) {
+  const w = words(pre.replace(/[,;:]+\s*$/, ''));
+  const out = [];
+  for (let i = w.length - 1; i >= 0 && out.length < 3; i--) {
+    const x = w[i].replace(/[,;:()"]/g, '');
+    if (STOP.has(x.toLowerCase())) break;
+    out.unshift(x);
+    if (/[,;:(]$/.test(w[i - 1] || '')) break;
+  }
+  if (!out.length && w.length) out.push(w[w.length - 1]);
+  return out.join(' ');
+}
+function npAfter(post) {
+  const w = words(post.split(/[.;:!?,]/)[0]);
+  const out = [];
+  for (const x of w) { if (STOP.has(x.toLowerCase()) && out.length) break; if (STOP.has(x.toLowerCase())) continue; out.push(x); if (out.length === 3) break; }
+  return out.join(' ');
+}
+function listAfter(tail) {
+  tail = tail.split(/[.;:!?]/)[0];
+  const parts = tail.split(/(\s*,\s*(?:and|or)\s+|\s+(?:and|or)\s+|\s*,\s*)/);
+  const items = [];
+  let last = false;
+  for (let i = 0; i < parts.length; i += 2) {
+    const delimBefore = i > 0 ? parts[i - 1] : '';
+    if (/\b(and|or)\b/.test(delimBefore)) last = true;
+    const w = stripDet(words(parts[i]));
+    if (!w.length) continue;
+    if (CLAUSE.has(w[0].toLowerCase())) break;
+    const out = [];
+    let cut = false;
+    for (const x of w) {
+      if (out.length && STOP.has(x.toLowerCase())) { cut = true; break; }
+      out.push(x);
+      if (out.length === 3) { cut = w.length > 3; break; }
+    }
+    if (out.length) items.push(out.join(' '));
+    if (cut || last) break;
+  }
+  return items;
+}
+function listBefore(pre) {
+  const parts = pre.split(/\s*,\s*(?:and|or)?\s*|\s+(?:and|or)\s+/).filter(s => s.trim());
+  const items = [];
+  for (let k = parts.length - 1; k >= 0; k--) {
+    const w = words(parts[k]);
+    const out = [];
+    for (let i = w.length - 1; i >= 0 && out.length < 2; i--) {
+      if (STOP.has(w[i].toLowerCase())) break;
+      out.unshift(w[i]);
+    }
+    if (!out.length) break;
+    items.unshift((k === 0 && w.length >= 3) ? out[out.length - 1] : out.join(' '));
+    if (k === 0 || w.length >= 3) break;
+  }
+  return items;
+}
+const PATTERNS = [
+  { label: 'NP₀ such as NP₁…', re: /\s*,?\s+such as\s+/i, dir: 'hyperFirst' },
+  { label: 'such NP₀ as NP₁…', re: /\bsuch\s+([A-Za-z][\w-]*(?:\s+[A-Za-z][\w-]*){0,2}?)\s+as\s+/i, dir: 'suchAs' },
+  { label: 'NP₁… and other NP₀', re: /\s*,?\s+and other\s+/i, dir: 'hypoFirst' },
+  { label: 'NP₁… or other NP₀', re: /\s*,?\s+or other\s+/i, dir: 'hypoFirst' },
+  { label: 'NP₀, including NP₁…', re: /\s*,?\s+including\s+/i, dir: 'hyperFirst' },
+  { label: 'NP₀, especially NP₁…', re: /\s*,?\s+especially\s+/i, dir: 'hyperFirst' },
+];
+function extract(sentence) {
+  const results = [];
+  for (const p of PATTERNS) {
+    const m = p.re.exec(sentence);
+    if (!m) continue;
+    const ts = m.index, te = m.index + m[0].length;
+    const pre = sentence.slice(0, ts), post = sentence.slice(te);
+    let hyper = '', hypos = [];
+    if (p.dir === 'hyperFirst') { hyper = npBefore(pre); hypos = listAfter(post); }
+    else if (p.dir === 'suchAs') { hyper = m[1]; hypos = listAfter(post); }
+    else { hypos = listBefore(pre); hyper = npAfter(post); }
+    if (hyper && hypos.length) results.push({ pattern: p.label, ts, te, hyper, hypos, dir: p.dir });
+  }
+  return results;
+}
+function ranges(s, r) {
+  const out = [];
+  const trimEnd = (a, b) => { while (b > a && /\s/.test(s[b - 1])) b--; return b; };
+  const pushHypos = (from, before) => {
+    let pos = from;
+    for (const h of r.hypos) { const i = s.indexOf(h, pos); if (i >= 0 && (before === undefined || i < before)) { out.push({ s: i, e: i + h.length, role: 'hypo' }); pos = i + h.length; } }
+  };
+  if (r.dir === 'suchAs') {
+    out.push({ s: r.ts, e: r.ts + 4, role: 'trigger' });
+    const hs = s.indexOf(r.hyper, r.ts + 4);
+    out.push({ s: hs, e: hs + r.hyper.length, role: 'hyper' });
+    const asS = s.indexOf(' as', hs + r.hyper.length) + 1;
+    out.push({ s: asS, e: asS + 2, role: 'trigger' });
+    pushHypos(r.te);
+  } else {
+    const lead = s.slice(r.ts, r.te).search(/\S/);
+    out.push({ s: r.ts + lead, e: trimEnd(r.ts, r.te), role: 'trigger' });
+    if (r.dir === 'hyperFirst') {
+      const hs = s.lastIndexOf(r.hyper, r.ts);
+      if (hs >= 0) out.push({ s: hs, e: hs + r.hyper.length, role: 'hyper' });
+      pushHypos(r.te);
+    } else {
+      const hs = s.indexOf(r.hyper, r.te);
+      if (hs >= 0) out.push({ s: hs, e: hs + r.hyper.length, role: 'hyper' });
+      pushHypos(0, r.ts);
+    }
+  }
+  return out;
+}
+/* ---------- Rank-k reconstruction by power iteration ---------- */
+function lowRank(A, k) {
+  const m = A.length, n = A[0].length;
+  const R = A.map(r => r.slice());
+  const out = A.map(r => r.map(() => 0));
+  for (let t = 0; t < k; t++) {
+    let v = Array.from({ length: n }, (_, i) => 1 + 0.1 * i);
+    for (let it = 0; it < 300; it++) {
+      const u = R.map(r => r.reduce((acc, x, j) => acc + x * v[j], 0));
+      const nv = Array(n).fill(0);
+      for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) nv[j] += R[i][j] * u[i];
+      const nrm = Math.hypot(...nv) || 1;
+      v = nv.map(x => x / nrm);
+    }
+    const u = R.map(r => r.reduce((acc, x, j) => acc + x * v[j], 0));
+    for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) { const c = u[i] * v[j]; out[i][j] += c; R[i][j] -= c; }
+  }
+  return out;
+}
+
+/* ---------- UI ---------- */
+(function () {
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // Chinese helper toggle
+  const zbtn = document.getElementById('zh-toggle');
+  function setZh(on) {
+    document.body.classList.toggle('hide-zh', !on);
+    zbtn.setAttribute('aria-pressed', String(on));
+    zbtn.textContent = on ? '中文辅助 On' : '中文辅助 Off';
+  }
+  let zhOn = true;
+  try { if (localStorage.getItem('hearst-zh') === '0') zhOn = false; } catch (e) {}
+  setZh(zhOn);
+  zbtn.addEventListener('click', () => {
+    zhOn = !zhOn; setZh(zhOn);
+    try { localStorage.setItem('hearst-zh', zhOn ? '1' : '0'); } catch (e) {}
+  });
+
+  // Matcher
+  const input = document.getElementById('mt-input');
+  const out = document.getElementById('mt-out');
+  const buttons = document.querySelectorAll('.ex-btns .btn');
+  let note = null;
+  function render() {
+    const s = input.value.trim();
+    if (!s) { out.innerHTML = '<p class="small">Type a sentence to see which patterns fire. · 输入句子查看哪些模板命中。</p>'; return; }
+    const res = extract(s);
+    let html = '';
+    if (!res.length) {
+      html += '<p class="annot">' + esc(s) + '</p><p><b>No pattern fired.</b> <span class="zh">没有模板命中。</span></p>';
+    } else {
+      let all = [];
+      res.forEach(r => { all = all.concat(ranges(s, r)); });
+      all = all.filter(g => g.s >= 0 && g.e > g.s).sort((a, b) => a.s - b.s);
+      const merged = [];
+      all.forEach(g => { if (!merged.length || g.s >= merged[merged.length - 1].e) merged.push(g); });
+      let pos = 0, h = '';
+      merged.forEach(g => { h += esc(s.slice(pos, g.s)) + '<span class="ann ' + g.role + '">' + esc(s.slice(g.s, g.e)) + '</span>'; pos = g.e; });
+      h += esc(s.slice(pos));
+      html += '<p class="annot">' + h + '</p><div class="res-list">';
+      res.forEach(r => r.hypos.forEach(hp => {
+        html += '<div class="res"><span class="triple"><span class="t hypo">' + esc(hp) + '</span><span class="rel">is-a</span><span class="t hyper">' + esc(r.hyper) + '</span></span><span class="chip">' + esc(r.pattern) + '</span></div>';
+      }));
+      html += '</div>';
+    }
+    if (note && note.s === s) html += '<div class="note' + (note.good ? ' good' : '') + '"><p>' + esc(note.en) + '</p><p class="zh">' + esc(note.zh) + '</p></div>';
+    out.innerHTML = html;
+  }
+  buttons.forEach(b => b.addEventListener('click', () => {
+    input.value = b.dataset.s;
+    note = b.dataset.note ? { s: b.dataset.s, en: b.dataset.note, zh: b.dataset.zh || '', good: !!b.dataset.good } : null;
+    buttons.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  }));
+  input.addEventListener('input', () => { buttons.forEach(x => x.setAttribute('aria-pressed', 'false')); render(); });
+  if (buttons[0]) buttons[0].setAttribute('aria-pressed', 'true');
+  render();
+
+  // Matrix demo
+  const rows = ['dog', 'cat', 'poodle', 'sparrow', 'robin'];
+  const cols = ['animal', 'pet', 'mammal', 'bird'];
+  const counts = [[120, 45, 30, 0], [98, 40, 25, 0], [0, 6, 0, 0], [40, 2, 0, 35], [0, 0, 0, 3]];
+  const logc = counts.map(r => r.map(v => Math.log1p(v)));
+  const smooth = lowRank(logc, 2);
+  const tbl = document.getElementById('mx');
+  const mxNote = document.getElementById('mx-note');
+  const bRaw = document.getElementById('mx-raw'), bSm = document.getElementById('mx-smooth');
+  function draw(mode) {
+    const vals = mode === 'raw' ? logc : smooth;
+    const max = Math.max(...vals.flat());
+    let h = '<thead><tr><th scope="col"><span class="sr" style="position:absolute;left:-9999px">hyponym</span></th>' + cols.map(c => '<th scope="col">' + c + '</th>').join('') + '</tr></thead><tbody>';
+    rows.forEach((r, i) => {
+      h += '<tr><th scope="row" class="row">' + r + '</th>';
+      cols.forEach((c, j) => {
+        const v = vals[i][j];
+        const a = Math.max(0, v) / max;
+        const filled = mode !== 'raw' && counts[i][j] === 0 && smooth[i][j] > 0.3;
+        const txt = mode === 'raw' ? String(counts[i][j]) : (smooth[i][j] <= 0.005 ? '≤0' : smooth[i][j].toFixed(2));
+        h += '<td' + (filled ? ' class="filled"' : '') + ' style="background:color-mix(in srgb, var(--hyper) ' + Math.round(a * 72) + '%, var(--card));color:' + (a > 0.55 ? 'var(--paper)' : 'var(--ink)') + '">' + txt + '</td>';
+      });
+      h += '</tr>';
+    });
+    tbl.innerHTML = h + '</tbody>';
+    bRaw.setAttribute('aria-pressed', String(mode === 'raw'));
+    bSm.setAttribute('aria-pressed', String(mode !== 'raw'));
+    mxNote.innerHTML = mode === 'raw'
+      ? 'Raw counts: <b>poodle</b> never co-occurs with animal or mammal in a pattern, and <b>robin</b> never with animal. <span class="zh">原始计数中，poodle 从未与 animal、mammal 在模板中共现，robin 从未与 animal 共现。</span>'
+      : 'Rank-2 reconstruction: the outlined cells turn positive. Poodle’s row looks like dog’s and cat’s, so it inherits their hypernyms; robin inherits animal from sparrow. <span class="zh">低秩重构后，带框的格子变为正值：poodle 那一行与 dog、cat 相似，于是继承了它们的上位词；robin 从 sparrow 那里继承了 animal。</span>';
+  }
+  bRaw.addEventListener('click', () => draw('raw'));
+  bSm.addEventListener('click', () => draw('smooth'));
+  draw('raw');
+})();
+</script>
+</body>
+</html>

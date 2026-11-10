@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en" class="zh-off">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relation Extraction Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --paper: #ffffff;
+  --ink: #17202c;
+  --muted: #5a6575;
+  --rule: #e2e6ec;
+  --rule-strong: #c5ccd6;
+  --tint: #f5f7fa;
+  --accent: #1d4ed8;
+  --subj: #2563eb;
+  --subj-tint: #dfe9fd;
+  --obj: #d9480f;
+  --obj-tint: #fde6d6;
+  --rel: #2b8a3e;
+  --rel-tint: #dcf2e1;
+  --warn: #c92a2a;
+  --warn-tint: #fdeaea;
+  --hl: #f59f00;
+  --hl-tint: #fff3d6;
+  --font-display: "Source Serif 4", "Noto Serif SC", Georgia, serif;
+  --font-body: "IBM Plex Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* layout: sticky table of contents on the left, one 780px reading column; one color code (subject blue, object orange, relation green) across every figure */
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 16.5px; line-height: 1.65; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, summary:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+nav.toc { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; padding: 28px 0; font-size: 13.5px; }
+nav.toc .brand { font-family: var(--font-display); font-weight: 600; font-size: 17px; margin-bottom: 14px; line-height: 1.3; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a { display: block; padding: 4px 10px; border-radius: 6px; color: var(--muted); text-decoration: none; }
+nav.toc a:hover { background: var(--tint); color: var(--ink); }
+nav.toc .sub a { padding-left: 22px; font-size: 12.5px; }
+nav.toc .zh-mini { font-size: 11.5px; color: var(--muted); opacity: .85; margin-left: 4px; }
+main { max-width: 800px; padding: 40px 0 80px; min-width: 0; }
+.zh { display: block; color: var(--muted); font-size: .92em; margin-top: 4px; line-height: 1.7; }
+p { margin: 0 0 14px; }
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; line-height: 1.25; margin: 0; }
+h1 { font-size: clamp(34px, 5vw, 48px); font-weight: 600; letter-spacing: -.01em; }
+h1 .zh { font-family: var(--font-body); font-size: 19px; margin-top: 10px; }
+.lede { font-size: 18px; margin-top: 18px; max-width: 66ch; }
+section { padding-top: 56px; }
+.sec-head { display: grid; gap: 4px; margin-bottom: 18px; border-top: 1px solid var(--rule); padding-top: 22px; }
+.sec-num { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); letter-spacing: .04em; }
+h2 { font-size: 30px; font-weight: 600; }
+h2 .zh { font-family: var(--font-body); font-size: 16px; font-weight: 400; margin-top: 6px; }
+h3 { font-size: 21px; font-weight: 600; margin: 30px 0 10px; }
+h3 .zh { font-family: var(--font-body); font-size: 14.5px; font-weight: 400; display: inline; margin-left: 8px; }
+.prose { max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: .9em; }
+code { background: var(--tint); padding: 1px 5px; border-radius: 4px; }
+.s { color: var(--subj); font-weight: 600; }
+.o { color: var(--obj); font-weight: 600; }
+.r { color: var(--rel); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 0; font-size: 13.5px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--rule); background: var(--paper); }
+.chip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.triples { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.triple { font-family: var(--font-mono); font-size: 13.5px; padding: 6px 12px; border-radius: 8px; background: var(--tint); border: 1px solid var(--rule); }
+figure { margin: 22px 0; border: 1px solid var(--rule); border-radius: 14px; padding: 18px 18px 14px; background: var(--paper); }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; min-width: 560px; }
+figcaption { font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+figcaption b { color: var(--ink); font-weight: 600; }
+svg text { font-family: var(--font-body); fill: var(--ink); font-size: 13px; }
+svg .fm { font-family: var(--font-mono); }
+svg .fmu { fill: var(--muted); }
+svg .fs { fill: var(--subj); }
+svg .fo { fill: var(--obj); }
+svg .fr { fill: var(--rel); }
+svg .fw { fill: var(--warn); }
+svg .fh { fill: #b06f00; }
+svg .f12 { font-size: 12px; }
+svg .f11 { font-size: 11px; }
+svg .f14 { font-size: 14px; }
+svg .f15 { font-size: 15px; }
+svg .f18 { font-size: 18px; }
+svg .fb { font-weight: 600; }
+svg .bx { fill: var(--paper); stroke: var(--rule-strong); stroke-width: 1; }
+svg .bt { fill: var(--tint); stroke: var(--rule); stroke-width: 1; }
+svg .ts { fill: var(--subj-tint); stroke: var(--subj); stroke-width: 1; }
+svg .to { fill: var(--obj-tint); stroke: var(--obj); stroke-width: 1; }
+svg .tr { fill: var(--rel-tint); stroke: var(--rel); stroke-width: 1; }
+svg .tw { fill: var(--warn-tint); stroke: var(--warn); stroke-width: 1; }
+svg .th { fill: var(--hl-tint); stroke: var(--hl); stroke-width: 1; }
+svg .ts0 { fill: var(--subj-tint); }
+svg .to0 { fill: var(--obj-tint); }
+svg .ln { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+svg .ln-s { stroke: var(--subj); stroke-width: 1.6; fill: none; }
+svg .ln-o { stroke: var(--obj); stroke-width: 1.6; fill: none; }
+svg .ln-r { stroke: var(--rel); stroke-width: 2; fill: none; }
+svg .ln-w { stroke: var(--warn); stroke-width: 1.4; fill: none; }
+svg .dash { stroke-dasharray: 4 4; }
+svg .faint { stroke: var(--rule-strong); stroke-width: 1; fill: none; }
+.callout { border: 1px solid var(--rule); background: var(--tint); border-radius: 12px; padding: 14px 18px; margin: 18px 0; }
+.callout .label { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; display: block; margin-bottom: 4px; }
+.era { border: 1px solid var(--rule); border-radius: 16px; padding: 24px 24px 18px; margin: 28px 0; background: var(--paper); }
+.era-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; }
+.era-top h3 { margin: 0; }
+.pill { font-family: var(--font-mono); font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--rule-strong); color: var(--muted); white-space: nowrap; }
+.pill.src { border-color: var(--rel); color: var(--rel); background: var(--rel-tint); }
+.pill.here { border-color: var(--hl); color: #8a5800; background: var(--hl-tint); }
+.kv { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 8px 16px; margin: 16px 0 6px; }
+.kv dt { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); padding-top: 3px; }
+.kv dd { margin: 0; }
+.example { border-left: 3px solid var(--subj); background: var(--tint); padding: 12px 16px; margin: 16px 0; }
+.example .label { font-family: var(--font-mono); font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+.wall { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; border: 1px dashed var(--rule-strong); border-radius: 12px; padding: 12px 16px; margin: 16px 0 6px; font-size: 15px; }
+.wall .tag { font-family: var(--font-mono); font-size: 12px; color: var(--warn); padding-top: 3px; }
+.wall .tag.next { color: var(--rel); }
+details.deep { margin-top: 14px; border-top: 1px solid var(--rule); padding-top: 10px; }
+details.deep > summary { cursor: pointer; font-weight: 600; color: var(--accent); list-style: none; display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+details.deep > summary::-webkit-details-marker { display: none; }
+details.deep > summary::before { content: "+"; font-family: var(--font-mono); width: 20px; height: 20px; border-radius: 6px; border: 1px solid var(--accent); display: inline-grid; place-items: center; font-size: 14px; }
+details.deep[open] > summary::before { content: "−"; }
+details.deep .inner { padding: 8px 0 4px; }
+.papers { margin: 6px 0 12px; padding-left: 20px; font-size: 15px; }
+.papers li { margin: 4px 0; }
+.papers .yr { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+.think { background: var(--hl-tint); border-radius: 10px; padding: 12px 16px; margin: 10px 0; }
+.think .label { font-family: var(--font-mono); font-size: 12px; color: #8a5800; display: block; margin-bottom: 2px; }
+.think details summary { cursor: pointer; color: #8a5800; font-size: 14px; margin-top: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+.tablewrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--rule); border-radius: 12px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--muted); background: var(--tint); letter-spacing: .03em; }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.patterns td:first-child { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+pre { font-family: var(--font-mono); font-size: 13px; line-height: 1.6; background: #f7f8fb; border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; overflow-x: auto; margin: 10px 0; white-space: pre; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.card { border: 1px solid var(--rule); border-radius: 12px; padding: 16px; }
+.card h4 { font-size: 16.5px; font-weight: 600; margin-bottom: 6px; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.pills a { font-size: 13.5px; text-decoration: none; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--rule-strong); color: var(--ink); }
+.pills a:hover { border-color: var(--accent); color: var(--accent); }
+.pills a .y { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-right: 6px; }
+.demo { border: 1px solid var(--hl); background: #fffdf6; border-radius: 14px; padding: 18px; margin: 20px 0 8px; }
+.demo h4 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+.demo label { font-size: 13.5px; color: var(--muted); display: block; margin: 10px 0 6px; }
+.demo textarea { width: 100%; min-height: 64px; font-family: var(--font-mono); font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--rule-strong); resize: vertical; background: var(--paper); color: var(--ink); }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.presets button { font: inherit; font-size: 13px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer; }
+.presets button:hover { border-color: var(--hl); background: var(--hl-tint); }
+.presets button[aria-pressed="true"] { border-color: var(--hl); background: var(--hl-tint); }
+.demo-out { margin-top: 14px; border-top: 1px dashed var(--rule-strong); padding-top: 12px; }
+.demo-out .sent { font-family: var(--font-mono); font-size: 14px; line-height: 1.9; }
+.demo-out mark { background: var(--rel-tint); color: var(--ink); border-radius: 4px; padding: 1px 2px; box-shadow: inset 0 -2px 0 var(--rel); }
+.demo-out .found { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.demo-out .found span.t { font-family: var(--font-mono); font-size: 13.5px; padding: 5px 10px; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; }
+.demo-out .note { font-size: 14px; color: var(--muted); }
+.demo-out .note.warn { color: var(--warn); }
+.ladder { counter-reset: step; list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 10px; }
+.ladder li { counter-increment: step; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; }
+.ladder li::before { content: counter(step); font-family: var(--font-mono); font-size: 13px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--rel); color: var(--rel); display: grid; place-items: center; margin-top: 2px; }
+.sources { font-size: 14px; }
+.sources li { margin: 4px 0; }
+html.zh-off .zh, html.zh-off .zh-t, html.zh-off .zh-mini, html.zh-off #gloss th:nth-child(2), html.zh-off #gloss td:nth-child(2) { display: none !important; }
+.zh-toggle { position: fixed; top: 14px; right: 16px; z-index: 50; display: inline-flex; align-items: center; gap: 9px; padding: 6px 8px 6px 13px; border: 1px solid var(--rule-strong); border-radius: 999px; background: var(--paper); color: var(--ink); font: 500 14px var(--font-body); cursor: pointer; box-shadow: 0 1px 3px rgba(23, 32, 44, .08); }
+.zh-toggle:hover { border-color: var(--accent); }
+.zh-toggle .track { position: relative; width: 32px; height: 18px; border-radius: 9px; background: var(--rule-strong); transition: background .18s; }
+.zh-toggle .knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .18s; }
+.zh-toggle[aria-checked="true"] .track { background: var(--accent); }
+.zh-toggle[aria-checked="true"] .knob { transform: translateX(14px); }
+@media (prefers-reduced-motion: reduce) { .zh-toggle .track, .zh-toggle .knob { transition: none; } }
+footer { color: var(--muted); font-size: 13px; margin-top: 60px; border-top: 1px solid var(--rule); padding-top: 16px; }
+@media (max-width: 980px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  nav.toc { position: static; max-height: none; padding: 16px 96px 0 0; overflow-x: auto; }
+  nav.toc ol { display: flex; gap: 6px; flex-wrap: nowrap; }
+  nav.toc .sub, nav.toc .zh-mini { display: none; }
+  nav.toc a { white-space: nowrap; border: 1px solid var(--rule); }
+  main { padding-top: 24px; }
+}
+@media (max-width: 620px) {
+  body { font-size: 16px; }
+  .two { grid-template-columns: minmax(0, 1fr); }
+  .kv { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .kv dd { margin-bottom: 8px; }
+  .era { padding: 18px 16px 14px; }
+  h2 { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+<button type="button" id="zh-toggle" class="zh-toggle" role="switch" aria-checked="false" aria-label="中文 Chinese text"><span>中文</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button>
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <div class="brand">RE Field Guide<span class="zh" style="font-family:var(--font-body);font-size:12.5px;font-weight:400"><span class="zh-t">关系抽取 · 图解</span></span></div>
+  <ol>
+    <li><a href="#idea">01 Core idea<span class="zh-mini"><span class="zh-t">核心</span></span></a></li>
+    <li><a href="#map">02 The map<span class="zh-mini"><span class="zh-t">地图</span></span></a></li>
+    <li><a href="#what">03 What to extract<span class="zh-mini"><span class="zh-t">抽什么</span></span></a></li>
+    <li><a href="#how">04 How to extract<span class="zh-mini"><span class="zh-t">怎么抽</span></span></a></li>
+    <li class="sub"><a href="#era1">1992 Patterns</a></li>
+    <li class="sub"><a href="#era2">1998 Bootstrapping</a></li>
+    <li class="sub"><a href="#era3">2003 Features &amp; kernels</a></li>
+    <li class="sub"><a href="#era4">2009 Distant supervision</a></li>
+    <li class="sub"><a href="#era5">2014 Neural networks</a></li>
+    <li class="sub"><a href="#era6">2019 Pre-trained LMs</a></li>
+    <li class="sub"><a href="#era7">2021 Generative &amp; LLMs</a></li>
+    <li><a href="#lowres">05 Few &amp; zero-shot<span class="zh-mini"><span class="zh-t">低资源</span></span></a></li>
+    <li><a href="#bench">06 Benchmarks<span class="zh-mini"><span class="zh-t">评测</span></span></a></li>
+    <li><a href="#frontier">07 Frontier<span class="zh-mini"><span class="zh-t">前沿</span></span></a></li>
+    <li><a href="#path">08 Learning path<span class="zh-mini"><span class="zh-t">路线</span></span></a></li>
+    <li><a href="#glossary">09 Glossary<span class="zh-mini"><span class="zh-t">术语</span></span></a></li>
+    <li><a href="#sources">Sources<span class="zh-mini"><span class="zh-t">参考</span></span></a></li>
+  </ol>
+</nav>
+
+<main>
+<header>
+  <h1>Relation Extraction, Drawn Out<span class="zh"><span class="zh-t">关系抽取 · 图解知识体系（英文为主，中文辅助）</span></span></h1>
+  <p class="lede">Relation extraction (RE) turns sentences into facts. It finds pairs of entities in text and names the relation between them, so that documents can become a knowledge graph. This guide maps the field on two axes, walks through seven generations of methods from Hearst's patterns (1992) to LLM prompting, and ends with a path for going deeper.
+  <span class="zh"><span class="zh-t">关系抽取把句子变成事实：找出文本中的实体对，并判断它们之间是什么关系，让文档变成知识图谱。本页按“抽什么 / 怎么抽”两条轴梳理整个领域，从 1992 年的 Hearst 模式讲到大模型提示，最后给出深入学习路线。</span></span></p>
+  <div class="legend" aria-label="Color code used in every figure">
+    <span class="chip"><i style="background:var(--subj)"></i>subject<span class="zh-t"> 主体</span></span>
+    <span class="chip"><i style="background:var(--obj)"></i>object<span class="zh-t"> 客体</span></span>
+    <span class="chip"><i style="background:var(--rel)"></i>relation<span class="zh-t"> 关系</span></span>
+    <span class="chip"><i style="background:var(--hl)"></i>Hearst / "you are here"</span>
+  </div>
+</header>
+
+<section id="idea">
+  <div class="sec-head"><span class="sec-num">01</span><h2>The core idea<span class="zh"><span class="zh-t">核心思想：NER 找“点”，RE 连“线”</span></span></h2></div>
+  <div class="prose">
+    <p>Named entity recognition finds the dots. Relation extraction draws the lines between them. Each line is a <b>triple</b> <code>(subject, relation, object)</code>.
+    <span class="zh"><span class="zh-t">命名实体识别（NER）负责找出“点”，关系抽取负责在点之间连“线”。每一条线就是一个三元组（主体，关系，客体）。</span></span></p>
+  </div>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 330" role="img" aria-label="A sentence about Marie Curie becomes a small graph: Marie Curie born_in Warsaw, and Marie Curie employee_of University of Paris.">
+      <defs>
+        <marker id="m0r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2b8a3e"/></marker>
+      </defs>
+      <rect x="20" y="16" width="720" height="52" rx="10" class="bt"/>
+      <rect x="40" y="29" width="103" height="26" rx="5" class="ts0"/>
+      <rect x="256" y="29" width="58" height="26" rx="5" class="to0"/>
+      <rect x="535" y="29" width="175" height="26" rx="5" class="to0"/>
+      <text x="42" y="48" class="fm f15"><tspan class="fs fb">Marie Curie</tspan> was born in <tspan class="fo fb">Warsaw</tspan> and later worked at the <tspan class="fo fb">University of Paris</tspan>.</text>
+      <line x1="91" y1="60" x2="140" y2="198" class="ln dash"/>
+      <line x1="285" y1="60" x2="360" y2="198" class="ln dash"/>
+      <line x1="622" y1="60" x2="620" y2="198" class="ln dash"/>
+      <text x="150" y="134" class="f12 fmu">① NER → nodes<tspan class="zh-t"> 找实体</tspan></text>
+      <text x="420" y="134" class="f12 fmu">② RE → labeled edges<tspan class="zh-t"> 定关系</tspan></text>
+      <rect x="60" y="200" width="160" height="40" rx="8" class="ts"/>
+      <text x="140" y="225" text-anchor="middle" class="fs fb">Marie Curie</text>
+      <rect x="300" y="200" width="120" height="40" rx="8" class="to"/>
+      <text x="360" y="225" text-anchor="middle" class="fo fb">Warsaw</text>
+      <rect x="520" y="200" width="200" height="40" rx="8" class="to"/>
+      <text x="620" y="225" text-anchor="middle" class="fo fb">University of Paris</text>
+      <line x1="221" y1="220" x2="297" y2="220" class="ln-r" marker-end="url(#m0r)"/>
+      <text x="259" y="212" text-anchor="middle" class="fr f12 fm">born_in</text>
+      <path d="M140 241 C140 300, 620 300, 620 244" class="ln-r" marker-end="url(#m0r)"/>
+      <text x="380" y="310" text-anchor="middle" class="fr f12 fm">employee_of</text>
+    </svg>
+    </div>
+    <figcaption><b>Text in, graph out.</b> Step ① marks entity mentions. Step ② decides, for each pair, which relation (if any) the text expresses.<span class="zh-t"> 文本进，图谱出：先标实体，再为每一对实体判断关系（也可能“无关系”）。</span></figcaption>
+  </figure>
+  <div class="triples"><span class="triple">(<span class="s">Marie Curie</span>, <span class="r">born_in</span>, <span class="o">Warsaw</span>)</span><span class="triple">(<span class="s">Marie Curie</span>, <span class="r">employee_of</span>, <span class="o">University of Paris</span>)</span></div>
+  <div class="callout">
+    <span class="label">FORMALLY<span class="zh-t"> · 形式化定义</span></span>
+    Given a text and two entity mentions e₁, e₂, predict r ∈ R ∪ {<code>no_relation</code>}. In the end-to-end version you get only the text and must output the whole set of triples.
+    <span class="zh"><span class="zh-t">给定文本和两个实体 e₁、e₂，预测关系 r（属于预定义集合 R，或“无关系”）。端到端版本只给文本，要输出全部三元组。</span></span>
+  </div>
+  <p class="prose">Where it is used: knowledge-base population (the TAC KBP “slot filling” task), search and question answering, biomedical literature mining (drug–drug and gene–disease interactions), and LLM pipelines that build a graph from documents before retrieval, as GraphRAG does.
+  <span class="zh"><span class="zh-t">应用：知识库补全（TAC KBP 槽填充）、搜索与问答、生物医学文献挖掘（药物相互作用、基因-疾病）、以及先从文档建图再检索的 LLM 流程（如 GraphRAG）。</span></span></p>
+</section>
+
+<section id="map">
+  <div class="sec-head"><span class="sec-num">02</span><h2>The map: two independent axes<span class="zh"><span class="zh-t">知识地图：两条互相独立的轴</span></span></h2></div>
+  <p class="prose">Every RE system answers two separate questions. <b>What</b> counts as a relation and where may its evidence sit? <b>How</b> does the system learn what a relation looks like? A paper's title usually names one point on each axis. “Pattern-based hypernym extraction” is Hearst's point.
+  <span class="zh"><span class="zh-t">每个关系抽取系统都要回答两个独立的问题：“抽什么”（什么算关系、证据在哪）和“怎么抽”（系统从哪学到关系长什么样）。论文标题通常各占一个点，Hearst 就是“基于模式的上下位关系抽取”。</span></span></p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 340" role="img" aria-label="Left panel: three task dials (relation set, granularity, task form) with Hearst marked at closed, sentence, end-to-end. Right panel: seven method eras from 1992 patterns to 2021 generative LLMs, each with its knowledge source.">
+      <rect x="12" y="12" width="360" height="316" rx="14" class="bx"/>
+      <text x="32" y="44" class="f15 fb">A · What to extract <tspan class="fmu" font-weight="400"><tspan class="zh-t">抽什么</tspan></tspan></text>
+      <text x="32" y="88" class="f12 fmu">Relation set<tspan class="zh-t"> 关系集合</tspan></text>
+      <line x1="72" y1="110" x2="312" y2="110" class="faint" stroke-width="3"/>
+      <circle cx="312" cy="110" r="5" fill="#c5ccd6"/>
+      <circle cx="72" cy="110" r="8" fill="#f59f00" stroke="#fff" stroke-width="2"/>
+      <text x="72" y="134" text-anchor="middle" class="f12">Closed<tspan class="zh-t"> 封闭</tspan></text>
+      <text x="312" y="134" text-anchor="middle" class="f12">Open<tspan class="zh-t"> 开放</tspan></text>
+      <text x="32" y="170" class="f12 fmu">Granularity<tspan class="zh-t"> 粒度</tspan></text>
+      <line x1="72" y1="192" x2="312" y2="192" class="faint" stroke-width="3"/>
+      <circle cx="192" cy="192" r="5" fill="#c5ccd6"/>
+      <circle cx="312" cy="192" r="5" fill="#c5ccd6"/>
+      <circle cx="72" cy="192" r="8" fill="#f59f00" stroke="#fff" stroke-width="2"/>
+      <text x="72" y="216" text-anchor="middle" class="f12">Sentence<tspan class="zh-t"> 句子</tspan></text>
+      <text x="192" y="216" text-anchor="middle" class="f12">Document<tspan class="zh-t"> 文档</tspan></text>
+      <text x="312" y="216" text-anchor="middle" class="f12">Cross-doc<tspan class="zh-t"> 跨文档</tspan></text>
+      <text x="32" y="252" class="f12 fmu">Task form<tspan class="zh-t"> 任务形式</tspan></text>
+      <line x1="72" y1="274" x2="312" y2="274" class="faint" stroke-width="3"/>
+      <circle cx="72" cy="274" r="5" fill="#c5ccd6"/>
+      <circle cx="312" cy="274" r="8" fill="#f59f00" stroke="#fff" stroke-width="2"/>
+      <text x="72" y="298" text-anchor="middle" class="f12">Classify pairs<tspan class="zh-t"> 分类</tspan></text>
+      <text x="312" y="298" text-anchor="middle" class="f12">End-to-end<tspan class="zh-t"> 端到端</tspan></text>
+      <circle cx="40" cy="316" r="5" fill="#f59f00"/>
+      <text x="52" y="320" class="f11 fmu">Hearst 1992: closed · sentence · end-to-end</text>
+
+      <rect x="388" y="12" width="360" height="316" rx="14" class="bx"/>
+      <text x="408" y="44" class="f15 fb">B · How to extract <tspan class="fmu" font-weight="400"><tspan class="zh-t">怎么抽</tspan></tspan></text>
+      <text x="736" y="66" text-anchor="end" class="f11 fmu">knowledge comes from…</text>
+      <line x1="420" y1="80" x2="420" y2="284" class="faint" stroke-width="2"/>
+      <circle cx="420" cy="80" r="7" fill="#f59f00" stroke="#fff" stroke-width="2"/>
+      <circle cx="420" cy="114" r="5" fill="#5a6575"/>
+      <circle cx="420" cy="148" r="5" fill="#5a6575"/>
+      <circle cx="420" cy="182" r="5" fill="#5a6575"/>
+      <circle cx="420" cy="216" r="5" fill="#5a6575"/>
+      <circle cx="420" cy="250" r="5" fill="#5a6575"/>
+      <circle cx="420" cy="284" r="5" fill="#2b8a3e"/>
+      <text x="436" y="84" class="f12 fm fmu">1992</text><text x="476" y="84" class="f13">Patterns</text><text x="736" y="84" text-anchor="end" class="f12 fr">hand-written rules</text>
+      <text x="436" y="118" class="f12 fm fmu">1998</text><text x="476" y="118">Bootstrapping</text><text x="736" y="118" text-anchor="end" class="f12 fr">a few seed pairs</text>
+      <text x="436" y="152" class="f12 fm fmu">2003</text><text x="476" y="152">Features &amp; kernels</text><text x="736" y="152" text-anchor="end" class="f12 fr">labels + hand features</text>
+      <text x="436" y="186" class="f12 fm fmu">2009</text><text x="476" y="186">Distant supervision</text><text x="736" y="186" text-anchor="end" class="f12 fr">a knowledge base</text>
+      <text x="436" y="220" class="f12 fm fmu">2014</text><text x="476" y="220">Neural networks</text><text x="736" y="220" text-anchor="end" class="f12 fr">labels, auto features</text>
+      <text x="436" y="254" class="f12 fm fmu">2019</text><text x="476" y="254">Pre-trained LMs</text><text x="736" y="254" text-anchor="end" class="f12 fr">pre-training + labels</text>
+      <text x="436" y="288" class="f12 fm fmu">2021</text><text x="476" y="288">Generative / LLM</text><text x="736" y="288" text-anchor="end" class="f12 fr">instructions, prompts</text>
+      <text x="408" y="318" class="f11 fmu">↓ less human effort per new relation<tspan class="zh-t"> 每个新关系所需人工越来越少</tspan></text>
+    </svg>
+    </div>
+    <figcaption><b>Read any paper as a coordinate.</b> Axis A fixes the problem; axis B fixes where the system's knowledge of a relation comes from. The two are independent: a 2024 LLM prompt can still solve the closed, sentence-level task Hearst solved.<span class="zh-t"> 把每篇论文看成一个坐标：A 轴定问题，B 轴定“关系知识从哪来”。两轴独立。</span></figcaption>
+  </figure>
+</section>
+
+<section id="what">
+  <div class="sec-head"><span class="sec-num">03 · AXIS A</span><h2>What to extract<span class="zh"><span class="zh-t">抽什么：三个刻度盘</span></span></h2></div>
+
+  <h3>Closed vs. open<span class="zh"><span class="zh-t">封闭关系 vs. 开放信息抽取</span></span></h3>
+  <p class="prose">Closed RE fixes a schema first (ACE types, TACRED's 41 relations, Wikidata properties) and classifies into it. Open IE (TextRunner 2007, ReVerb 2011, OpenIE6 2020) keeps the relation as a text span. It never misses an unseen relation type, but you have to normalize “born in” and “a native of” yourself later.
+  <span class="zh"><span class="zh-t">封闭式先定好关系表再分类；开放式把关系直接保留为原文片段，覆盖面广，但“born in”和“a native of”这类同义说法要事后自己归一。</span></span></p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 300" role="img" aria-label="The same sentence processed two ways. Closed RE with a three-relation schema keeps only born_in and ignores discovered. Open IE outputs three text-span triples including discovered polonium.">
+      <rect x="20" y="14" width="720" height="44" rx="10" class="bt"/>
+      <text x="140" y="41" class="fm f14"><tspan class="fs fb">Marie Curie</tspan>, born in <tspan class="fo fb">Warsaw</tspan>, discovered <tspan class="fo fb">polonium</tspan> in <tspan class="fo fb">1898</tspan>.</text>
+      <rect x="20" y="78" width="352" height="208" rx="12" class="bx"/>
+      <text x="36" y="106" class="f14 fb">Closed RE <tspan class="fmu" font-weight="400"><tspan class="zh-t">封闭关系抽取</tspan></tspan></text>
+      <text x="36" y="132" class="f12 fmu">Schema, fixed in advance:</text>
+      <rect x="36" y="142" width="68" height="24" rx="12" class="tr"/><text x="70" y="158" text-anchor="middle" class="fm f12 fr">born_in</text>
+      <rect x="112" y="142" width="84" height="24" rx="12" class="bt"/><text x="154" y="158" text-anchor="middle" class="fm f12 fmu">spouse_of</text>
+      <rect x="204" y="142" width="98" height="24" rx="12" class="bt"/><text x="253" y="158" text-anchor="middle" class="fm f12 fmu">employee_of</text>
+      <text x="36" y="198" class="fm f12"><tspan class="fr">✓</tspan> (<tspan class="fs">Marie Curie</tspan>, <tspan class="fr">born_in</tspan>, <tspan class="fo">Warsaw</tspan>)</text>
+      <text x="36" y="224" class="f12"><tspan class="fw">✗</tspan> “discovered” is not in the schema → ignored</text>
+      <text x="36" y="264" class="f12 fmu">+ canonical labels   − blind beyond the schema</text>
+      <rect x="388" y="78" width="352" height="208" rx="12" class="bx"/>
+      <text x="404" y="106" class="f14 fb">Open IE <tspan class="fmu" font-weight="400"><tspan class="zh-t">开放信息抽取</tspan></tspan></text>
+      <text x="404" y="132" class="f12 fmu">No schema: the relation is a span of the text</text>
+      <text x="404" y="166" class="fm f12">(<tspan class="fs">Marie Curie</tspan>; <tspan class="fr">born in</tspan>; <tspan class="fo">Warsaw</tspan>)</text>
+      <text x="404" y="192" class="fm f12">(<tspan class="fs">Marie Curie</tspan>; <tspan class="fr">discovered</tspan>; <tspan class="fo">polonium</tspan>)</text>
+      <text x="404" y="218" class="fm f12">(<tspan class="fs">Marie Curie</tspan>; <tspan class="fr">discovered polonium in</tspan>; <tspan class="fo">1898</tspan>)</text>
+      <text x="404" y="264" class="f12 fmu">+ covers anything   − “born in” ≠ “native of”</text>
+    </svg>
+    </div>
+    <figcaption><b>Same sentence, two contracts.</b> Closed RE trades coverage for clean, comparable labels; Open IE trades normalization for coverage.<span class="zh-t"> 同一句话，两种约定：封闭式换来干净可比的标签，开放式换来覆盖面。</span></figcaption>
+  </figure>
+
+  <h3>Sentence, document, cross-document<span class="zh"><span class="zh-t">粒度：句子级 / 文档级 / 跨文档</span></span></h3>
+  <p class="prose">Sentence-level RE assumes both entities and the evidence sit in one sentence. Document-level RE drops that assumption: in DocRED (2019) at least 40.7% of the facts can only be extracted from multiple sentences, usually through coreference. Cross-document RE (CodRED, 2021) chains evidence across separate texts.
+  <span class="zh"><span class="zh-t">句子级假设证据都在一句话里；文档级不再假设——DocRED 中至少 40.7% 的事实需要跨句（通常靠共指）才能抽出；跨文档则要把多篇文本的证据串起来。</span></span></p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 214" role="img" aria-label="A three-sentence document about Ada Lovelace. Coreference links She and Her back to Ada Lovelace, so the triple Ada Lovelace father Lord Byron needs sentences one and three together.">
+      <defs><marker id="m1r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2b8a3e"/></marker></defs>
+      <rect x="12" y="16" width="530" height="182" rx="12" class="bx"/>
+      <text x="40" y="42" class="f11 fmu">document<tspan class="zh-t"> 文档</tspan></text>
+      <rect x="38" y="60" width="105" height="24" rx="4" class="ts0"/>
+      <rect x="38" y="100" width="29" height="24" rx="4" fill="none" stroke="#2563eb" stroke-dasharray="3 3"/>
+      <rect x="172" y="100" width="130" height="24" rx="4" fill="#eef0f3"/>
+      <rect x="38" y="140" width="29" height="24" rx="4" fill="none" stroke="#2563eb" stroke-dasharray="3 3"/>
+      <rect x="240" y="140" width="88" height="24" rx="4" class="to0"/>
+      <text x="40" y="77" class="fm f14"><tspan class="fs fb">Ada Lovelace</tspan> was an English mathematician.</text>
+      <text x="40" y="117" class="fm f14"><tspan class="fs">She</tspan> worked with Charles Babbage on the Analytical Engine.</text>
+      <text x="40" y="157" class="fm f14"><tspan class="fs">Her</tspan> father was the poet <tspan class="fo fb">Lord Byron</tspan>.</text>
+      <path d="M37 112 C18 108, 18 76, 37 72" class="ln-s dash"/>
+      <path d="M37 152 C8 148, 8 76, 37 70" class="ln-s dash"/>
+      <text x="40" y="186" class="f11 fmu">dashed: coreference<tspan class="zh-t"> 共指（She / Her → Ada Lovelace）</tspan></text>
+      <rect x="580" y="40" width="160" height="36" rx="8" class="ts"/>
+      <text x="660" y="63" text-anchor="middle" class="fs fb">Ada Lovelace</text>
+      <rect x="580" y="140" width="160" height="36" rx="8" class="to"/>
+      <text x="660" y="163" text-anchor="middle" class="fo fb">Lord Byron</text>
+      <line x1="660" y1="77" x2="660" y2="137" class="ln-r" marker-end="url(#m1r)"/>
+      <text x="670" y="112" class="fr fm f12">father</text>
+      <text x="660" y="198" text-anchor="middle" class="f11 fmu">needs S1 + S3 + coref</text>
+    </svg>
+    </div>
+    <figcaption><b>No single sentence holds both names.</b> A sentence-level model never sees the pair (Ada Lovelace, Lord Byron); a document-level model must resolve “Her” first.<span class="zh-t"> 没有一句话同时包含两个实体，句子级模型根本看不到这对实体。</span></figcaption>
+  </figure>
+
+  <h3>Classify a pair, or extract everything<span class="zh"><span class="zh-t">任务形式：关系分类 vs. 端到端三元组抽取</span></span></h3>
+  <p class="prose">Relation classification gets the entity pair for free and only picks a label (SemEval-2010 Task 8, TACRED). End-to-end extraction must also find the entities. A <b>pipeline</b> runs NER and then RE; PURE (2021) showed that a carefully built pipeline is hard to beat. A <b>joint</b> model does both at once (Miwa &amp; Bansal 2016; CasRel 2020; TPLinker 2020). Much of the push for joint models came from <b>overlapping triples</b>, which Zeng et al. (2018) sorted into three types:
+  <span class="zh"><span class="zh-t">关系分类：实体对已给定，只选标签；端到端：实体也要自己找。流水线先 NER 后 RE（PURE 2021 证明好的流水线很难被超越）；联合模型一次完成。推动联合模型的一大动因是“重叠三元组”。</span></span></p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 236" role="img" aria-label="Three mini graphs. Normal: one triple. SEO: Curie appears in two triples. EPO: Warsaw and Poland are linked by two relations, capital_of and located_in.">
+      <defs><marker id="m2r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2b8a3e"/></marker></defs>
+      <rect x="12" y="12" width="232" height="212" rx="12" class="bx"/>
+      <text x="128" y="38" text-anchor="middle" class="f14 fb">Normal</text>
+      <text x="128" y="62" text-anchor="middle" class="f12 fmu">Curie was born in Warsaw.</text>
+      <rect x="24" y="115" width="70" height="30" rx="7" class="ts"/><text x="59" y="135" text-anchor="middle" class="fs f12 fb">Curie</text>
+      <rect x="166" y="115" width="70" height="30" rx="7" class="to"/><text x="201" y="135" text-anchor="middle" class="fo f12 fb">Warsaw</text>
+      <line x1="95" y1="130" x2="163" y2="130" class="ln-r" marker-end="url(#m2r)"/>
+      <text x="130" y="121" text-anchor="middle" class="fr fm f11">born_in</text>
+      <text x="128" y="200" text-anchor="middle" class="f12">one tag per token: fine</text>
+
+      <rect x="264" y="12" width="232" height="212" rx="12" class="bx"/>
+      <text x="380" y="38" text-anchor="middle" class="f14 fb">SEO <tspan class="fmu f12" font-weight="400">single entity overlap</tspan></text>
+      <text x="380" y="62" text-anchor="middle" class="f12 fmu">Curie, born in Warsaw,</text>
+      <text x="380" y="78" text-anchor="middle" class="f12 fmu">worked in Paris.</text>
+      <rect x="282" y="115" width="70" height="30" rx="7" class="ts"/><text x="317" y="135" text-anchor="middle" class="fs f12 fb">Curie</text>
+      <rect x="418" y="88" width="70" height="30" rx="7" class="to"/><text x="453" y="108" text-anchor="middle" class="fo f12 fb">Warsaw</text>
+      <rect x="418" y="142" width="70" height="30" rx="7" class="to"/><text x="453" y="162" text-anchor="middle" class="fo f12 fb">Paris</text>
+      <line x1="353" y1="124" x2="415" y2="105" class="ln-r" marker-end="url(#m2r)"/>
+      <line x1="353" y1="136" x2="415" y2="155" class="ln-r" marker-end="url(#m2r)"/>
+      <text x="370" y="104" text-anchor="middle" class="fr fm f11">born_in</text>
+      <text x="384" y="170" text-anchor="middle" class="fr fm f11">works_in</text>
+      <text x="380" y="200" text-anchor="middle" class="f12 fw">Curie must play two roles</text>
+
+      <rect x="516" y="12" width="232" height="212" rx="12" class="bx"/>
+      <text x="632" y="38" text-anchor="middle" class="f14 fb">EPO <tspan class="fmu f12" font-weight="400">entity pair overlap</tspan></text>
+      <text x="632" y="62" text-anchor="middle" class="f12 fmu">Warsaw is the capital</text>
+      <text x="632" y="78" text-anchor="middle" class="f12 fmu">of Poland.</text>
+      <rect x="534" y="115" width="70" height="30" rx="7" class="ts"/><text x="569" y="135" text-anchor="middle" class="fs f12 fb">Warsaw</text>
+      <rect x="664" y="115" width="70" height="30" rx="7" class="to"/><text x="699" y="135" text-anchor="middle" class="fo f12 fb">Poland</text>
+      <path d="M605 122 Q634 92 661 120" class="ln-r" marker-end="url(#m2r)"/>
+      <path d="M605 138 Q634 168 661 140" class="ln-r" marker-end="url(#m2r)"/>
+      <text x="634" y="98" text-anchor="middle" class="fr fm f11">capital_of</text>
+      <text x="634" y="172" text-anchor="middle" class="fr fm f11">located_in</text>
+      <text x="632" y="200" text-anchor="middle" class="f12 fw">same pair, two relations</text>
+    </svg>
+    </div>
+    <figcaption><b>Why one-label-per-token tagging breaks.</b> In SEO a token belongs to two triples; in EPO one pair needs two labels. CasRel's fix: first tag subjects, then, for each relation, tag that subject's objects.<span class="zh-t"> 序列标注一个词只能有一个标签：SEO 中一个实体要扮演两个角色，EPO 中一对实体要两个关系。CasRel 先找主体，再按关系逐个找客体。</span></figcaption>
+  </figure>
+  <details class="deep">
+    <summary>Go deeper: beyond binary triples<span class="zh-t"> · 深入：超越二元三元组</span></summary>
+    <div class="inner prose">
+      <p>Real facts often have more than two arguments or carry qualifiers. <b>N-ary</b> RE links three or more entities, as in drug–gene–mutation interactions (Peng et al., 2017). <b>Hyper-relational</b> facts add qualifiers: <span class="mono">(Curie, award_received, Nobel Prize in Physics)</span> plus <span class="mono">point_in_time = 1903</span>. Event extraction sits next door, with a trigger word and argument roles.
+      <span class="zh"><span class="zh-t">现实事实常常不止两个论元，或带限定条件：N 元关系（如药物-基因-突变）、超关系事实（三元组 + 时间等限定词）。事件抽取与之相邻（触发词 + 论元角色）。</span></span></p>
+      <ol class="papers">
+        <li>Zeng et al., <a href="https://aclanthology.org/P18-1047/">Extracting Relational Facts by an End-to-End Neural Model with Copy Mechanism</a> <span class="yr">ACL 2018</span>: defines Normal / SEO / EPO.</li>
+        <li>Wei et al., <a href="https://aclanthology.org/2020.acl-main.136/">A Novel Cascade Binary Tagging Framework (CasRel)</a> <span class="yr">ACL 2020</span></li>
+        <li>Zhong &amp; Chen, <a href="https://aclanthology.org/2021.naacl-main.5/">A Frustratingly Easy Approach for Entity and Relation Extraction (PURE)</a> <span class="yr">NAACL 2021</span></li>
+        <li>Yao et al., <a href="https://aclanthology.org/P19-1074/">DocRED</a> <span class="yr">ACL 2019</span></li>
+      </ol>
+      <div class="think"><span class="label">THINK ABOUT IT<span class="zh-t"> · 思考题</span></span>PURE beat joint models with a plain pipeline. What does that suggest about where the errors in end-to-end RE really come from?
+        <details><summary>Show a hint<span class="zh-t"> · 看提示</span></summary>Much of the gain came from good span representations and from feeding entity information to the relation model early. “Joint” is an architecture choice, not a guarantee of shared information.<span class="zh-t"> 很多收益来自好的片段表示、以及尽早把实体信息喂给关系模型；“联合”只是架构选择，不保证信息真正共享。</span></details></div>
+    </div>
+  </details>
+</section>
+
+<section id="how">
+  <div class="sec-head"><span class="sec-num">04 · AXIS B</span><h2>How to extract: seven generations<span class="zh"><span class="zh-t">怎么抽：七代范式</span></span></h2></div>
+  <p class="prose">The history of RE is a history of one question: <b>where does the system's knowledge of a relation come from?</b> Each generation moved part of that work from people to data, and then from data to models.
+  <span class="zh"><span class="zh-t">关系抽取的历史，本质上是在回答同一个问题：系统关于“某种关系长什么样”的知识从哪里来？每一代都把一部分工作从人转给数据，再从数据转给模型。</span></span></p>
+  <div class="pills" aria-label="Jump to an era">
+    <a href="#era1"><span class="y">1992</span>Patterns</a>
+    <a href="#era2"><span class="y">1998</span>Bootstrapping</a>
+    <a href="#era3"><span class="y">2003</span>Features &amp; kernels</a>
+    <a href="#era4"><span class="y">2009</span>Distant supervision</a>
+    <a href="#era5"><span class="y">2014</span>Neural nets</a>
+    <a href="#era6"><span class="y">2019</span>Pre-trained LMs</a>
+    <a href="#era7"><span class="y">2021</span>Generative &amp; LLMs</a>
+  </div>
+
+  <article class="era" id="era1">
+    <div class="era-top"><span class="pill">1992 →</span><h3>Patterns and rules<span class="zh"><span class="zh-t">规则 / 模式匹配</span></span></h3><span class="pill src">source: hand-written rules</span><span class="pill here">Hearst lives here</span></div>
+    <dl class="kv">
+      <dt>Core idea<br><span class="zh-t">核心</span></dt><dd>Write lexico-syntactic templates that only match when the relation holds. Hearst (1992) found six that signal <b>is-a</b> (hyponymy) and harvested them from raw text with no labels.
+      <span class="zh"><span class="zh-t">手写“词汇-句法模板”，只在关系成立时匹配。Hearst 发现了六个表示“是一种”（上下位）的模板，无需任何标注即可从原始文本中收割。</span></span></dd>
+      <dt>Context<br><span class="zh-t">背景</span></dt><dd>Rule-based IE dominated the MUC evaluations (1987–1998); MUC-7 (1998) added a relation task with <code>employee_of</code>, <code>product_of</code> and <code>location_of</code>.
+      <span class="zh">MUC<span class="zh-t"> 评测时代以规则系统为主；MUC-7 首次设立关系任务（雇佣、产品、位置三种）。</span></span></dd>
+    </dl>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 760 220" role="img" aria-label="Anatomy of a Hearst pattern: in fruits such as apples, bananas and mangoes, fruits is the hypernym, such as is the cue, and the three listed items are hyponyms, each linked to fruits by is-a.">
+        <defs><marker id="m3r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2b8a3e"/></marker></defs>
+        <text x="182" y="36" text-anchor="middle" class="f12 fo fb">hypernym · NP₀</text>
+        <text x="263" y="36" text-anchor="middle" class="f12 fr fb">cue</text>
+        <text x="458" y="36" text-anchor="middle" class="f12 fs fb">hyponyms · NP₁ … NPₙ</text>
+        <path d="M150 58 V50 H215 V58" class="ln-o"/>
+        <path d="M226 58 V50 H301 V58" class="ln-r" stroke-width="1.6"/>
+        <path d="M312 58 V50 H604 V58" class="ln-s"/>
+        <text x="150" y="86" class="fm f18"><tspan class="fo fb">fruits</tspan> <tspan class="fr fb">such as</tspan> <tspan class="fs fb">apples</tspan>, <tspan class="fs fb">bananas</tspan> and <tspan class="fs fb">mangoes</tspan></text>
+        <path d="M344 98 Q263 150 186 100" class="ln-r" marker-end="url(#m3r)"/>
+        <path d="M436 98 Q309 175 182 100" class="ln-r" marker-end="url(#m3r)"/>
+        <path d="M566 98 Q374 200 178 100" class="ln-r" marker-end="url(#m3r)"/>
+        <text x="390" y="168" text-anchor="middle" class="fr fm f12">is-a ×3</text>
+        <text x="380" y="204" text-anchor="middle" class="fm f13">hyponym(apples, fruits) · hyponym(bananas, fruits) · hyponym(mangoes, fruits)</text>
+      </svg>
+      </div>
+      <figcaption><b>One template, three facts.</b> The cue phrase does the work: whatever is listed after “such as” is taken to be a kind of the noun phrase before it.<span class="zh-t"> 一个模板，三条事实：“such as”后面列举的东西，都被视为前面名词短语的一种。</span></figcaption>
+    </figure>
+    <div class="tablewrap">
+      <table class="patterns">
+        <thead><tr><th>Hearst pattern</th><th>Example fragment (Hearst 1992)</th><th>Extracted</th></tr></thead>
+        <tbody>
+          <tr><td>NP such as {NP,}* {or|and} NP</td><td>“The bow lute, such as the Bambara ndang…”</td><td class="mono">(Bambara ndang, is-a, bow lute)</td></tr>
+          <tr><td>such NP as {NP,}* {or|and} NP</td><td>“…works by such authors as Herrick, Goldsmith, and Shakespeare”</td><td class="mono">(Herrick, is-a, author)</td></tr>
+          <tr><td>NP {, NP}* {,} or other NP</td><td>“Bruises, wounds, broken bones or other injuries…”</td><td class="mono">(bruise, is-a, injury)</td></tr>
+          <tr><td>NP {, NP}* {,} and other NP</td><td>“…temples, treasuries, and other important civic buildings”</td><td class="mono">(temple, is-a, civic building)</td></tr>
+          <tr><td>NP {,} including {NP,}* {or|and} NP</td><td>“All common-law countries, including Canada and England…”</td><td class="mono">(Canada, is-a, common-law country)</td></tr>
+          <tr><td>NP {,} especially {NP,}* {or|and} NP</td><td>“…most European countries, especially France, England, and Spain”</td><td class="mono">(France, is-a, European country)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="demo" id="hearst-demo">
+      <h4>Try it: a live Hearst matcher<span class="zh" style="font-family:var(--font-body);font-size:13.5px;font-weight:400"><span class="zh-t">动手试：实时 Hearst 模式匹配器（输入任意英文句子）</span></span></h4>
+      <label for="hearst-input">Sentence<span class="zh-t"> 句子</span></label>
+      <textarea id="hearst-input" spellcheck="false">The bow lute, such as the Bambara ndang, is plucked.</textarea>
+      <div class="presets" role="group" aria-label="Example sentences">
+        <button type="button" data-text="The bow lute, such as the Bambara ndang, is plucked." data-note="Hearst's own opening example. A two-word hypernym is recovered when a determiner precedes it." aria-pressed="true">bow lute</button>
+        <button type="button" data-text="Works by such authors as Herrick, Goldsmith, and Shakespeare." data-note="Pattern 2 (such NP as): one match, three facts.">such authors as</button>
+        <button type="button" data-text="Bruises, wounds, broken bones or other injuries were treated." data-note="Pattern 3 (or other): here the hyponyms come before the hypernym.">or other</button>
+        <button type="button" data-text="Most European countries, especially France, England, and Spain, joined." data-note="Pattern 6 (especially).">especially</button>
+        <button type="button" data-text="My favourite fruits are apples and mangoes." data-note="RECALL: the fact is stated, but in none of the six templates, so nothing fires. 召回低：事实写了，但不是模板句式。" data-warn="1">miss (recall)</button>
+        <button type="button" data-text="Problems such as these require patience." data-note="PRECISION: the pattern fires on a pronoun. “these” is not a kind of problem. Hearst used NP chunking to block this. 精确率问题：模板误匹配了代词。" data-warn="1">false hit (precision)</button>
+      </div>
+      <div class="demo-out" id="hearst-out" aria-live="polite"></div>
+    </div>
+    <div class="wall"><span class="tag">LIMIT<span class="zh-t"> · 瓶颈</span></span><span>High precision, low recall. Each phrasing needs its own template, and every new relation needs a linguist.<span class="zh-t"> 精确率高、召回率低；每种说法都要一个模板，每个新关系都要语言学家手写。</span></span>
+      <span class="tag next">NEXT<span class="zh-t"> · 下一步</span></span><span>Let the machine write the patterns.<span class="zh-t"> 让机器自己学模板。</span></span></div>
+    <details class="deep">
+      <summary>Go deeper: patterns never died<span class="zh-t"> · 深入：模式方法从未消亡</span></summary>
+      <div class="inner prose">
+        <p>Roller, Kiela &amp; Nickel (2018) compared Hearst patterns with distributional methods for hypernymy detection and found the patterns, smoothed with matrix factorization, still won. LLM prompts that say “X such as …” are Hearst patterns in a new place (see <a href="#frontier">§07</a>).
+        <span class="zh">Roller<span class="zh-t"> 等（2018）发现，经矩阵分解平滑后的 Hearst 模式在上下位关系检测上仍优于分布式方法。今天写 “X such as …” 的 LLM 提示，本质也是模板。</span></span></p>
+        <ol class="papers">
+          <li>Hearst, <a href="https://aclanthology.org/C92-2082/">Automatic Acquisition of Hyponyms from Large Text Corpora</a> <span class="yr">COLING 1992</span></li>
+          <li>Roller et al., <a href="https://aclanthology.org/P18-2057/">Hearst Patterns Revisited</a> <span class="yr">ACL 2018</span></li>
+        </ol>
+        <div class="think"><span class="label">THINK ABOUT IT<span class="zh-t"> · 思考题</span></span>The demo's “false hit” fires on “Problems such as these”. Name two constraints that would block it without hurting recall much.
+          <details><summary>Show a hint<span class="zh-t"> · 看提示</span></summary>Require each hyponym to be a noun-phrase head (POS / chunk check, which rejects pronouns), and require it to occur under the same pattern in several sentences before accepting it (frequency threshold).<span class="zh-t"> 要求下位词是名词短语中心词（排除代词），并要求同一对在多句中重复出现才接受。</span></details></div>
+      </div>
+    </details>
+  </article>
+
+  <article class="era" id="era2">
+    <div class="era-top"><span class="pill">1998 →</span><h3>Bootstrapping<span class="zh"><span class="zh-t">自举：种子滚雪球</span></span></h3><span class="pill src">source: a few seed pairs</span></div>
+    <dl class="kv">
+      <dt>Core idea<br><span class="zh-t">核心</span></dt><dd>Start from a handful of seed pairs. Find sentences that mention them, turn those contexts into patterns, use the patterns to find new pairs, and repeat. DIPRE (Brin, 1998) harvested book–author pairs from the web; Snowball (Agichtein &amp; Gravano, 2000) added confidence scores for patterns and tuples.
+      <span class="zh"><span class="zh-t">从几个种子对出发：找到提到它们的句子 → 把上下文变成模板 → 用模板找新对 → 循环。DIPRE 在网上抽“书-作者”，Snowball 为模板和元组加了置信度。</span></span></dd>
+    </dl>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 760 330" role="img" aria-label="The Snowball loop: seed pairs lead to found sentences, which give induced patterns, which yield new pairs that are added back as seeds. A warning box shows semantic drift from a loose pattern.">
+        <defs><marker id="m4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5a6575"/></marker></defs>
+        <rect x="20" y="20" width="320" height="86" rx="12" class="bx"/>
+        <text x="36" y="46" class="f14 fb">1 · Seed pairs <tspan class="fmu" font-weight="400"><tspan class="zh-t">种子</tspan></tspan></text>
+        <text x="36" y="70" class="fm f12">(<tspan class="fs">Microsoft</tspan>, <tspan class="fo">Redmond</tspan>)</text>
+        <text x="36" y="90" class="fm f12">(<tspan class="fs">IBM</tspan>, <tspan class="fo">Armonk</tspan>)  (<tspan class="fs">Boeing</tspan>, <tspan class="fo">Seattle</tspan>)</text>
+        <rect x="420" y="20" width="320" height="86" rx="12" class="bx"/>
+        <text x="436" y="46" class="f14 fb">2 · Find mentions <tspan class="fmu" font-weight="400"><tspan class="zh-t">找句子</tspan></tspan></text>
+        <text x="436" y="70" class="f12">“<tspan class="fs">Microsoft</tspan>'s headquarters in <tspan class="fo">Redmond</tspan> …”</text>
+        <text x="436" y="90" class="f12">“<tspan class="fs">Boeing</tspan>, based in <tspan class="fo">Seattle</tspan>, …”</text>
+        <rect x="420" y="158" width="320" height="86" rx="12" class="tr"/>
+        <text x="436" y="184" class="f14 fb">3 · Induce patterns <tspan class="fmu" font-weight="400"><tspan class="zh-t">归纳模板</tspan></tspan></text>
+        <text x="436" y="208" class="fm f12">⟨<tspan class="fs">ORG</tspan>⟩'s headquarters in ⟨<tspan class="fo">LOC</tspan>⟩</text>
+        <text x="436" y="228" class="fm f12">⟨<tspan class="fs">ORG</tspan>⟩, based in ⟨<tspan class="fo">LOC</tspan>⟩</text>
+        <rect x="20" y="158" width="320" height="86" rx="12" class="bx"/>
+        <text x="36" y="184" class="f14 fb">4 · New pairs <tspan class="fmu" font-weight="400"><tspan class="zh-t">新元组</tspan></tspan></text>
+        <text x="36" y="210" class="fm f12">(<tspan class="fs">Exxon</tspan>, <tspan class="fo">Irving</tspan>)  (<tspan class="fs">Intel</tspan>, <tspan class="fo">Santa Clara</tspan>)</text>
+        <line x1="342" y1="63" x2="416" y2="63" class="ln" marker-end="url(#m4)"/>
+        <text x="379" y="55" text-anchor="middle" class="f11 fmu">search</text>
+        <line x1="580" y1="108" x2="580" y2="154" class="ln" marker-end="url(#m4)"/>
+        <text x="590" y="136" class="f11 fmu">generalize</text>
+        <line x1="418" y1="201" x2="344" y2="201" class="ln" marker-end="url(#m4)"/>
+        <text x="381" y="193" text-anchor="middle" class="f11 fmu">match</text>
+        <line x1="180" y1="156" x2="180" y2="110" class="ln" marker-end="url(#m4)"/>
+        <text x="190" y="138" class="f11 fmu">add &amp; repeat</text>
+        <rect x="20" y="262" width="720" height="56" rx="10" class="tw"/>
+        <text x="36" y="285" class="f13 fb fw">Semantic drift<tspan class="zh-t"> · 语义漂移</tspan></text>
+        <text x="36" y="306" class="f12">A loose pattern ⟨ORG⟩ opened an office in ⟨LOC⟩ adds (IBM, Dublin) as a headquarters, and the errors snowball too.</text>
+      </svg>
+      </div>
+      <figcaption><b>The loop is the method.</b> Seeds and patterns bootstrap each other, so one bad pattern can pull the relation off course. Snowball's confidence scores slow the drift but do not stop it.<span class="zh-t"> 种子和模板互相“提携”，一个坏模板就能把整个关系带偏；置信度只能减缓漂移。</span></figcaption>
+    </figure>
+    <div class="example"><span class="label">CLASSIC EXAMPLE<span class="zh-t"> · 经典示例</span></span>Snowball's seed set for organization → headquarters location was pairs like <span class="mono">(Microsoft, Redmond)</span>, <span class="mono">(IBM, Armonk)</span>, <span class="mono">(Boeing, Seattle)</span>, run over a newswire corpus. Later systems pushed the idea further: KnowItAll (2005) and NELL (2010), a “never-ending” learner that kept reading the web.
+      <span class="zh">Snowball<span class="zh-t"> 用（微软，雷德蒙德）等组织-总部种子在新闻语料上运行；后来的 KnowItAll、NELL（永不停止的学习者）把这一思路做到网络规模。</span></span></div>
+    <div class="wall"><span class="tag">LIMIT<span class="zh-t"> · 瓶颈</span></span><span>Semantic drift, and no clean notion of “wrong”: the system never sees a negative example.<span class="zh-t"> 语义漂移；系统从没见过负例，不知道什么是“错”。</span></span>
+      <span class="tag next">NEXT<span class="zh-t"> · 下一步</span></span><span>Annotate data properly and train a classifier.<span class="zh-t"> 认真标注数据，训练分类器。</span></span></div>
+    <details class="deep">
+      <summary>Go deeper<span class="zh-t"> · 深入</span></summary>
+      <div class="inner prose">
+        <ol class="papers">
+          <li>Brin, Extracting Patterns and Relations from the World Wide Web (DIPRE) <span class="yr">WebDB 1998</span></li>
+          <li>Agichtein &amp; Gravano, Snowball: Extracting Relations from Large Plain-Text Collections <span class="yr">ACM DL 2000</span></li>
+          <li>Carlson et al., Toward an Architecture for Never-Ending Language Learning (NELL) <span class="yr">AAAI 2010</span></li>
+        </ol>
+        <div class="think"><span class="label">THINK ABOUT IT<span class="zh-t"> · 思考题</span></span>Bootstrapping is semi-supervised learning with a feedback loop. Which modern technique has the same failure mode?
+          <details><summary>Show a hint<span class="zh-t"> · 看提示</span></summary>Self-training and pseudo-labeling, including LLMs labeling data for their own fine-tuning: confirmation bias is semantic drift by another name.<span class="zh-t"> 自训练 / 伪标签（包括让 LLM 给自己造训练数据）：确认偏差就是语义漂移的另一个名字。</span></details></div>
+      </div>
+    </details>
+  </article>
+
+  <article class="era" id="era3">
+    <div class="era-top"><span class="pill">2003 →</span><h3>Supervised: features and kernels<span class="zh"><span class="zh-t">有监督：特征工程与核方法</span></span></h3><span class="pill src">source: labels + hand features</span></div>
+    <dl class="kv">
+      <dt>Core idea<br><span class="zh-t">核心</span></dt><dd>Annotate entity pairs with relation labels. Describe each pair with features (words between the entities, entity types, parse paths) and train a classifier (Kambhatla 2004; Zhou et al. 2005), or skip explicit features and compare structures with a kernel (Zelenko et al. 2003; Culotta &amp; Sorensen 2004; Bunescu &amp; Mooney 2005).
+      <span class="zh"><span class="zh-t">给实体对标注关系标签；用特征（实体间的词、实体类型、句法路径）描述每一对，训练分类器；或者不显式写特征，用核函数直接比较结构。</span></span></dd>
+      <dt>Data<br><span class="zh-t">数据</span></dt><dd>The ACE program (2000–2008) supplied expert-annotated news; SemEval-2010 Task 8 gave a clean, directional benchmark.
+      <span class="zh">ACE<span class="zh-t"> 项目提供专家标注的新闻语料；SemEval-2010 Task 8 提供带方向的干净基准。</span></span></dd>
+    </dl>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 70 760 210" role="img" aria-label="Dependency arcs over Protesters seized several pumping stations. The shortest path between Protesters and stations goes through seized via nsubj and dobj.">
+        <defs><marker id="m5r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2b8a3e"/></marker>
+        <marker id="m5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5a6575"/></marker></defs>
+        <path d="M288 178 Q235 120 186 177" class="ln-r" marker-end="url(#m5r)"/>
+        <path d="M292 178 Q437 40 582 177" class="ln-r" marker-end="url(#m5r)"/>
+        <path d="M582 178 Q484 110 387 177" class="ln" marker-end="url(#m5)"/>
+        <path d="M588 178 Q535 140 486 177" class="ln" marker-end="url(#m5)"/>
+        <text x="235" y="140" text-anchor="middle" class="fr fm f12">nsubj</text>
+        <text x="437" y="100" text-anchor="middle" class="fr fm f12">dobj</text>
+        <rect x="133" y="180" width="98" height="32" rx="7" class="ts"/><text x="182" y="201" text-anchor="middle" class="fs fb">Protesters</text>
+        <rect x="255" y="180" width="67" height="32" rx="7" class="tr"/><text x="288.5" y="201" text-anchor="middle" class="fr fb">seized</text>
+        <rect x="346" y="180" width="75" height="32" rx="7" class="bt"/><text x="383.5" y="201" text-anchor="middle">several</text>
+        <rect x="445" y="180" width="75" height="32" rx="7" class="bt"/><text x="482.5" y="201" text-anchor="middle">pumping</text>
+        <rect x="544" y="180" width="83" height="32" rx="7" class="to"/><text x="585.5" y="201" text-anchor="middle" class="fo fb">stations</text>
+        <text x="380" y="246" text-anchor="middle" class="fm f13">path: <tspan class="fs">protesters</tspan> ←nsubj— <tspan class="fr">seized</tspan> —dobj→ <tspan class="fo">stations</tspan></text>
+        <text x="380" y="268" text-anchor="middle" class="f12 fmu">the kernel compares these short paths instead of whole sentences<tspan class="zh-t"> 只比较最短依存路径</tspan></text>
+      </svg>
+      </div>
+      <figcaption><b>The shortest dependency path</b> (Bunescu &amp; Mooney, 2005). Their example: “Protesters seized several pumping stations…”. The relation between <span class="s">protesters</span> and <span class="o">stations</span> is carried by the two-hop path through “seized”; the modifiers are noise.<span class="zh-t"> 两个实体之间的关系信息集中在最短依存路径上，修饰词基本是噪声。这个思路后来被 SDP-LSTM、GCN 继承。</span></figcaption>
+    </figure>
+    <div class="example"><span class="label">CLASSIC EXAMPLE · SemEval-2010 Task 8</span>“The <span class="o">burst</span> has been caused by water hammer <span class="s">pressure</span>.” → <span class="mono">Cause-Effect(e2, e1)</span>. Direction is part of the label: the pressure caused the burst, not the other way round. 9 directed relations + Other.
+      <span class="zh"><span class="zh-t">方向是标签的一部分：是压力导致爆裂，不是反过来。9 种有向关系 + Other。</span></span></div>
+    <div class="wall"><span class="tag">LIMIT<span class="zh-t"> · 瓶颈</span></span><span>Expensive expert labels, endless feature engineering, and parser errors flow straight into the classifier.<span class="zh-t"> 专家标注昂贵、特征工程无止境、句法分析错误直接传进分类器。</span></span>
+      <span class="tag next">NEXT<span class="zh-t"> · 下一步</span></span><span>Get labels for free from a knowledge base.<span class="zh-t"> 从知识库“免费”拿标签。</span></span></div>
+    <details class="deep">
+      <summary>Go deeper<span class="zh-t"> · 深入</span></summary>
+      <div class="inner prose">
+        <ol class="papers">
+          <li>Zelenko, Aone &amp; Richardella, Kernel Methods for Relation Extraction <span class="yr">JMLR 2003</span></li>
+          <li>Kambhatla, Combining Lexical, Syntactic, and Semantic Features with Maximum Entropy Models <span class="yr">ACL 2004</span></li>
+          <li>Bunescu &amp; Mooney, <a href="https://aclanthology.org/H05-1091/">A Shortest Path Dependency Kernel for Relation Extraction</a> <span class="yr">EMNLP 2005</span></li>
+          <li>Hendrickx et al., <a href="https://aclanthology.org/S10-1006/">SemEval-2010 Task 8</a> <span class="yr">SemEval 2010</span></li>
+        </ol>
+        <div class="think"><span class="label">THINK ABOUT IT<span class="zh-t"> · 思考题</span></span>A kernel needs no explicit feature vector. What does it still need from a human?
+          <details><summary>Show a hint<span class="zh-t"> · 看提示</span></summary>A choice of structure (tokens, constituency tree, dependency path) and a similarity over it. That is feature engineering moved one level up.<span class="zh-t"> 结构的选择和其上的相似度定义——特征工程只是上移了一层。</span></details></div>
+      </div>
+    </details>
+  </article>
+
+  <article class="era" id="era4">
+    <div class="era-top"><span class="pill">2009 →</span><h3>Distant supervision<span class="zh"><span class="zh-t">远程监督：用知识库自动打标</span></span></h3><span class="pill src">source: a knowledge base</span></div>
+    <dl class="kv">
+      <dt>Core idea<br><span class="zh-t">核心</span></dt><dd>Mintz et al. (2009): if a knowledge base (Freebase) contains <span class="mono">(e₁, r, e₂)</span>, assume every sentence that mentions both e₁ and e₂ expresses r. That gives free training labels at web scale, plus a lot of noise.
+      <span class="zh"><span class="zh-t">如果知识库里有（e₁，r，e₂），就假设所有同时提到 e₁ 和 e₂ 的句子都在表达 r。标签免费、规模巨大，但噪声也大。</span></span></dd>
+      <dt>Fixes<br><span class="zh-t">补救</span></dt><dd>Riedel et al. (2010) relaxed it to “at least one sentence is right” and built the NYT10 dataset, which turned the task into multi-instance learning. MultiR (2011) and MIML-RE (2012) allowed several relations per pair; PCNN (2015) and selective attention (Lin et al., 2016) learned which sentences to trust.
+      <span class="zh">Riedel<span class="zh-t"> 放宽为“至少一句是对的”（多示例学习），并发布 NYT10；MultiR、MIML-RE 允许一对实体有多个关系；PCNN 与选择性注意力学会“该信哪一句”。</span></span></dd>
+    </dl>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 760 290" role="img" aria-label="A knowledge base triple Steve Jobs founder_of Apple is aligned to a bag of three sentences. Only the first actually expresses founding; attention weights 0.82, 0.11, 0.07 pick it out.">
+        <defs><marker id="m6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5a6575"/></marker></defs>
+        <rect x="16" y="90" width="200" height="110" rx="12" class="bx"/>
+        <text x="32" y="116" class="f14 fb">Knowledge base</text>
+        <text x="32" y="134" class="f12 fmu">Freebase / Wikidata</text>
+        <text x="32" y="160" class="fm f12">(<tspan class="fs">Steve Jobs</tspan>,</text>
+        <text x="32" y="178" class="fm f12"> <tspan class="fr">founder_of</tspan>, <tspan class="fo">Apple</tspan>)</text>
+        <line x1="218" y1="145" x2="262" y2="145" class="ln" marker-end="url(#m6)"/>
+        <text x="240" y="136" text-anchor="middle" class="f11 fmu">align</text>
+        <rect x="266" y="24" width="478" height="248" rx="14" fill="none" stroke="#c5ccd6" stroke-dasharray="5 4"/>
+        <text x="282" y="46" class="f12 fmu">bag: every sentence that mentions both<tspan class="zh-t"> 包</tspan></text>
+        <text x="652" y="46" class="f11 fmu">attention</text>
+        <rect x="282" y="60" width="358" height="44" rx="8" class="tr"/>
+        <text x="296" y="87" class="f14 fr fb">✓</text>
+        <text x="316" y="87" class="f13"><tspan class="fs">Steve Jobs</tspan> co-founded <tspan class="fo">Apple</tspan> in 1976.</text>
+        <rect x="282" y="118" width="358" height="44" rx="8" class="tw"/>
+        <text x="296" y="145" class="f14 fw fb">✗</text>
+        <text x="316" y="145" class="f13"><tspan class="fs">Steve Jobs</tspan> unveiled the iPhone at an <tspan class="fo">Apple</tspan> event.</text>
+        <rect x="282" y="176" width="358" height="44" rx="8" class="tw"/>
+        <text x="296" y="203" class="f14 fw fb">✗</text>
+        <text x="316" y="203" class="f13"><tspan class="fs">Steve Jobs</tspan> returned to <tspan class="fo">Apple</tspan> in 1997.</text>
+        <rect x="652" y="74" width="66" height="14" rx="3" fill="#2b8a3e"/><text x="722" y="86" class="f11 fm">.82</text>
+        <rect x="652" y="132" width="9" height="14" rx="3" fill="#c5ccd6"/><text x="666" y="144" class="f11 fm fmu">.11</text>
+        <rect x="652" y="190" width="6" height="14" rx="3" fill="#c5ccd6"/><text x="663" y="202" class="f11 fm fmu">.07</text>
+        <text x="282" y="250" class="f12">bag label → <tspan class="fr fm">founder_of</tspan>   <tspan class="fmu">(“at least one sentence is right”)</tspan></text>
+      </svg>
+      </div>
+      <figcaption><b>Free labels, noisy labels.</b> All three sentences mention both entities, so all three get <span class="mono">founder_of</span>, but only the first says so. Multi-instance learning labels the bag instead of each sentence; selective attention learns to weight the right one.<span class="zh-t"> 三句都被打上“创始人”，只有第一句真的在说这件事。多示例学习给“包”打标，注意力学会挑对的句子。</span></figcaption>
+    </figure>
+    <div class="wall"><span class="tag">LIMIT<span class="zh-t"> · 瓶颈</span></span><span>Noise is structural: false positives from co-mentions, false negatives from an incomplete KB, and a held-out evaluation that is itself noisy.<span class="zh-t"> 噪声是结构性的：共现带来假阳性，知识库不全带来假阴性，连自动评测本身都有噪声。</span></span>
+      <span class="tag next">NEXT<span class="zh-t"> · 下一步</span></span><span>Better encoders: learn features with neural networks, and build larger clean datasets (TACRED, 2017).<span class="zh-t"> 用神经网络自动学特征，并构建更大的干净数据集。</span></span></div>
+    <details class="deep">
+      <summary>Go deeper<span class="zh-t"> · 深入</span></summary>
+      <div class="inner prose">
+        <ol class="papers">
+          <li>Mintz et al., <a href="https://aclanthology.org/P09-1113/">Distant Supervision for Relation Extraction without Labeled Data</a> <span class="yr">ACL-IJCNLP 2009</span></li>
+          <li>Riedel, Yao &amp; McCallum, Modeling Relations and Their Mentions without Labeled Text <span class="yr">ECML-PKDD 2010</span></li>
+          <li>Zeng et al., <a href="https://aclanthology.org/D15-1203/">Piecewise Convolutional Neural Networks (PCNN)</a> <span class="yr">EMNLP 2015</span></li>
+          <li>Lin et al., <a href="https://aclanthology.org/P16-1200/">Neural Relation Extraction with Selective Attention over Instances</a> <span class="yr">ACL 2016</span></li>
+        </ol>
+        <div class="think"><span class="label">THINK ABOUT IT<span class="zh-t"> · 思考题</span></span>Why does an incomplete knowledge base create false <i>negatives</i>, and why are those harder to fix than false positives?
+          <details><summary>Show a hint<span class="zh-t"> · 看提示</span></summary>A pair missing from the KB is labeled NA even when the text states the relation. Multi-instance learning only questions positive bags, so these silent errors are never revisited.<span class="zh-t"> 知识库缺失的实体对会被标为“无关系”；多示例学习只怀疑正例包，这些“沉默的错误”从不被复查。</span></details></div>
+      </div>
+    </details>
+  </article>
+
+  <article class="era" id="era5">
+    <div class="era-top"><span class="pill">2014 →</span><h3>Neural networks<span class="zh"><span class="zh-t">神经网络：自动学特征</span></span></h3><span class="pill src">source: labels, auto features</span></div>
+    <dl class="kv">
+      <dt>Core idea<br><span class="zh-t">核心</span></dt><dd>Stop writing features. Feed word embeddings plus <b>position embeddings</b> (each token's distance to e₁ and to e₂) into a CNN (Zeng et al., 2014), an LSTM over the dependency path (Xu et al., 2015), an attention BiLSTM (Zhou et al., 2016), or a graph convolution over the pruned dependency tree (Zhang, Qi &amp; Manning, 2018).
+      <span class="zh"><span class="zh-t">不再手写特征：把词向量 + 位置向量（每个词到两个实体的距离）送入 CNN、依存路径上的 LSTM、注意力 BiLSTM 或依存树上的图卷积。</span></span></dd>
+      <dt>Data<br><span class="zh-t">数据</span></dt><dd>TACRED (Zhang et al., 2017): 106,264 crowd-labeled examples from TAC KBP text, 41 relations plus <code>no_relation</code>. It became the standard sentence-level benchmark.
+      <span class="zh">TACRED：10.6<span class="zh-t"> 万条众包标注样本，41 种关系 + no_relation，成为句子级标准基准。</span></span></dd>
+    </dl>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 760 236" role="img" aria-label="A CNN relation classifier: each token gets a word vector plus two position vectors measuring distance to Curie and Warsaw; a width-three filter slides over them, max-pooling keeps the strongest features, and softmax picks born_in with 0.92.">
+        <defs><marker id="m7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5a6575"/></marker></defs>
+        <text x="70" y="36" text-anchor="middle" class="fs fb">Curie</text>
+        <text x="150" y="36" text-anchor="middle">was</text>
+        <text x="230" y="36" text-anchor="middle">born</text>
+        <text x="310" y="36" text-anchor="middle">in</text>
+        <text x="390" y="36" text-anchor="middle" class="fo fb">Warsaw</text>
+        <text x="16" y="62" class="f11 fs fm">d₁</text><text x="16" y="82" class="f11 fo fm">d₂</text>
+        <text x="70" y="62" text-anchor="middle" class="fm f12 fs">0</text><text x="150" y="62" text-anchor="middle" class="fm f12 fs">1</text><text x="230" y="62" text-anchor="middle" class="fm f12 fs">2</text><text x="310" y="62" text-anchor="middle" class="fm f12 fs">3</text><text x="390" y="62" text-anchor="middle" class="fm f12 fs">4</text>
+        <text x="70" y="82" text-anchor="middle" class="fm f12 fo">−4</text><text x="150" y="82" text-anchor="middle" class="fm f12 fo">−3</text><text x="230" y="82" text-anchor="middle" class="fm f12 fo">−2</text><text x="310" y="82" text-anchor="middle" class="fm f12 fo">−1</text><text x="390" y="82" text-anchor="middle" class="fm f12 fo">0</text>
+        <g>
+          <rect x="52" y="96" width="36" height="54" rx="3" class="bt"/><rect x="52" y="154" width="36" height="10" rx="2" class="ts"/><rect x="52" y="167" width="36" height="10" rx="2" class="to"/>
+          <rect x="132" y="96" width="36" height="54" rx="3" class="bt"/><rect x="132" y="154" width="36" height="10" rx="2" class="ts"/><rect x="132" y="167" width="36" height="10" rx="2" class="to"/>
+          <rect x="212" y="96" width="36" height="54" rx="3" class="bt"/><rect x="212" y="154" width="36" height="10" rx="2" class="ts"/><rect x="212" y="167" width="36" height="10" rx="2" class="to"/>
+          <rect x="292" y="96" width="36" height="54" rx="3" class="bt"/><rect x="292" y="154" width="36" height="10" rx="2" class="ts"/><rect x="292" y="167" width="36" height="10" rx="2" class="to"/>
+          <rect x="372" y="96" width="36" height="54" rx="3" class="bt"/><rect x="372" y="154" width="36" height="10" rx="2" class="ts"/><rect x="372" y="167" width="36" height="10" rx="2" class="to"/>
+        </g>
+        <rect x="124" y="90" width="212" height="94" rx="8" fill="none" stroke="#2b8a3e" stroke-width="1.6" stroke-dasharray="5 4"/>
+        <text x="230" y="204" text-anchor="middle" class="f12 fr">filter · window 3<tspan class="zh-t"> 滑动卷积窗</tspan></text>
+        <text x="16" y="126" class="f11 fmu">word</text>
+        <line x1="414" y1="138" x2="462" y2="138" class="ln" marker-end="url(#m7)"/>
+        <rect x="470" y="100" width="18" height="14" rx="2" class="bt"/><rect x="470" y="116" width="18" height="14" rx="2" class="tr"/><rect x="470" y="132" width="18" height="14" rx="2" class="bt"/><rect x="470" y="148" width="18" height="14" rx="2" class="tr"/><rect x="470" y="164" width="18" height="14" rx="2" class="bt"/>
+        <text x="479" y="204" text-anchor="middle" class="f12 fmu">max-pool</text>
+        <line x1="494" y1="138" x2="532" y2="138" class="ln" marker-end="url(#m7)"/>
+        <text x="540" y="92" class="f11 fmu">softmax</text>
+        <text x="540" y="114" class="fm f12">born_in</text><rect x="630" y="104" width="92" height="12" rx="3" fill="#2b8a3e"/><text x="726" y="114" class="fm f11">.92</text>
+        <text x="540" y="142" class="fm f12 fmu">lives_in</text><rect x="630" y="132" width="5" height="12" rx="2" fill="#c5ccd6"/><text x="640" y="142" class="fm f11 fmu">.05</text>
+        <text x="540" y="170" class="fm f12 fmu">no_relation</text><rect x="630" y="160" width="3" height="12" rx="2" fill="#c5ccd6"/><text x="638" y="170" class="fm f11 fmu">.03</text>
+      </svg>
+      </div>
+      <figcaption><b>Position embeddings tell the network which words are the entities.</b> Without the d₁ / d₂ rows, “Curie was born in Warsaw” and “Warsaw was born in Curie” look alike to a convolution.<span class="zh-t"> 位置向量告诉网络哪两个词是实体；没有它，卷积分不清主客体。</span></figcaption>
+    </figure>
+    <div class="wall"><span class="tag">LIMIT<span class="zh-t"> · 瓶颈</span></span><span>Representations are learned from a small labeled set, so every relation still needs thousands of examples.<span class="zh-t"> 表示只从少量标注数据学来，每种关系仍需成千上万样本。</span></span>
+      <span class="tag next">NEXT<span class="zh-t"> · 下一步</span></span><span>Pre-train on raw text first, fine-tune second.<span class="zh-t"> 先在海量原始文本上预训练，再微调。</span></span></div>
+    <details class="deep">
+      <summary>Go deeper<span class="zh-t"> · 深入</span></summary>
+      <div class="inner prose">
+        <ol class="papers">
+          <li>Zeng et al., <a href="https://aclanthology.org/C14-1220/">Relation Classification via Convolutional Deep Neural Network</a> <span class="yr">COLING 2014</span></li>
+          <li>Zhang et al., <a href="https://aclanthology.org/D17-1004/">Position-aware Attention and Supervised Data Improve Slot Filling (TACRED)</a> <span class="yr">EMNLP 2017</span></li>
+          <li>Zhang, Qi &amp; Manning, <a href="https://aclanthology.org/D18-1244/">Graph Convolution over Pruned Dependency Trees</a> <span class="yr">EMNLP 2018</span></li>
+        </ol>
+        <div class="think"><span class="label">THINK ABOUT IT<span class="zh-t"> · 思考题</span></span>The 2018 GCN still uses the dependency tree from era 3. Why would a neural model want a parser at all?
+          <details><summary>Show a hint<span class="zh-t"> · 看提示</span></summary>The tree is an inductive bias: it brings distant but related words together (the shortest-path idea). With little data the bias helps; pre-trained Transformers later learned much of that structure on their own.<span class="zh-t"> 依存树是一种归纳偏置，把远处相关的词拉近；数据少时有用，后来预训练模型自己学到了大部分结构。</span></details></div>
+      </div>
+    </details>
+  </article>
+
+  <article class="era" id="era6">
+    <div class="era-top"><span class="pill">2019 →</span><h3>Pre-trained language models<span class="zh"><span class="zh-t">预训练模型 + 实体标记</span></span></h3><span class="pill src">source: pre-training + labels</span></div>
+    <dl class="kv">
+      <dt>Core idea<br><span class="zh-t">核心</span></dt><dd>Wrap the two entities in marker tokens, run a pre-trained Transformer, and classify from the hidden states at the markers. Matching the Blanks (Baldini Soares et al., 2019) set the recipe and also pre-trained relation representations by blanking out entities. Zhou &amp; Chen's “improved baseline” (2022) showed that typed markers in plain punctuation, such as <span class="mono">@ * person * Marie Curie @</span>, are a strong default.
+      <span class="zh"><span class="zh-t">在两个实体两侧插入标记，过预训练 Transformer，取标记位置的隐状态做分类。MTB 确立了这一做法；Zhou &amp; Chen 证明带类型的标点标记是很强的默认方案。</span></span></dd>
+    </dl>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 760 280" role="img" aria-label="Entity marker architecture: tokens CLS, E1, Marie, Curie, /E1, was, born, in, E2, Warsaw, /E2, SEP go into a pre-trained encoder; the hidden states at E1 and E2 are concatenated and classified as born_in.">
+        <defs><marker id="m8s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2563eb"/></marker>
+        <marker id="m8o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#d9480f"/></marker></defs>
+        <rect x="290" y="24" width="180" height="36" rx="8" class="tr"/>
+        <text x="380" y="47" text-anchor="middle" class="f12">concat → linear → <tspan class="fr fb fm">born_in</tspan></text>
+        <path d="M151 86 V42 H286" class="ln-s" marker-end="url(#m8s)"/>
+        <path d="M491 86 V42 H474" class="ln-o" marker-end="url(#m8o)"/>
+        <rect x="121" y="86" width="60" height="22" rx="5" class="ts"/><text x="151" y="101" text-anchor="middle" class="fm f11 fs">h[E1]</text>
+        <rect x="461" y="86" width="60" height="22" rx="5" class="to"/><text x="491" y="101" text-anchor="middle" class="fm f11 fo">h[E2]</text>
+        <line x1="151" y1="148" x2="151" y2="110" class="ln-s"/>
+        <line x1="491" y1="148" x2="491" y2="110" class="ln-o"/>
+        <rect x="75" y="150" width="610" height="54" rx="10" class="bt"/>
+        <text x="380" y="182" text-anchor="middle" class="f13">Pre-trained encoder <tspan class="fmu">(BERT · RoBERTa · SpanBERT · LUKE)</tspan></text>
+        <g class="ln">
+          <line x1="100" y1="234" x2="100" y2="206"/><line x1="151" y1="234" x2="151" y2="206"/><line x1="202" y1="234" x2="202" y2="206"/><line x1="258" y1="234" x2="258" y2="206"/><line x1="312" y1="234" x2="312" y2="206"/><line x1="360" y1="234" x2="360" y2="206"/><line x1="407" y1="234" x2="407" y2="206"/><line x1="450" y1="234" x2="450" y2="206"/><line x1="491" y1="234" x2="491" y2="206"/><line x1="547" y1="234" x2="547" y2="206"/><line x1="606" y1="234" x2="606" y2="206"/><line x1="660" y1="234" x2="660" y2="206"/>
+        </g>
+        <rect x="75" y="236" width="50" height="26" rx="5" class="bt"/><text x="100" y="253" text-anchor="middle" class="fm f11 fmu">[CLS]</text>
+        <rect x="131" y="236" width="40" height="26" rx="5" class="ts"/><text x="151" y="253" text-anchor="middle" class="fm f11 fs fb">[E1]</text>
+        <rect x="177" y="236" width="50" height="26" rx="5" class="bx"/><text x="202" y="253" text-anchor="middle" class="f12 fs">Marie</text>
+        <rect x="233" y="236" width="50" height="26" rx="5" class="bx"/><text x="258" y="253" text-anchor="middle" class="f12 fs">Curie</text>
+        <rect x="289" y="236" width="46" height="26" rx="5" class="ts"/><text x="312" y="253" text-anchor="middle" class="fm f11 fs fb">[/E1]</text>
+        <rect x="341" y="236" width="38" height="26" rx="5" class="bx"/><text x="360" y="253" text-anchor="middle" class="f12">was</text>
+        <rect x="385" y="236" width="44" height="26" rx="5" class="bx"/><text x="407" y="253" text-anchor="middle" class="f12">born</text>
+        <rect x="435" y="236" width="30" height="26" rx="5" class="bx"/><text x="450" y="253" text-anchor="middle" class="f12">in</text>
+        <rect x="471" y="236" width="40" height="26" rx="5" class="to"/><text x="491" y="253" text-anchor="middle" class="fm f11 fo fb">[E2]</text>
+        <rect x="517" y="236" width="60" height="26" rx="5" class="bx"/><text x="547" y="253" text-anchor="middle" class="f12 fo">Warsaw</text>
+        <rect x="583" y="236" width="46" height="26" rx="5" class="to"/><text x="606" y="253" text-anchor="middle" class="fm f11 fo fb">[/E2]</text>
+        <rect x="635" y="236" width="50" height="26" rx="5" class="bt"/><text x="660" y="253" text-anchor="middle" class="fm f11 fmu">[SEP]</text>
+      </svg>
+      </div>
+      <figcaption><b>Mark, encode, read off the markers.</b> The whole sentence is encoded at once, so the marker states already “know” the context between the entities; the classifier on top is tiny.<span class="zh-t"> 标记 → 编码 → 读取标记位置：整句一起编码，标记位置已经包含实体间上下文，顶上的分类器很小。</span></figcaption>
+    </figure>
+    <div class="example"><span class="label">TYPED MARKERS<span class="zh-t"> · 带类型的标记（Zhou &amp; Chen 2022）</span></span>
+      <span class="mono">@ * person * <span class="s">Marie Curie</span> @ was born in # ^ city ^ <span class="o">Warsaw</span> #</span>
+      <span class="zh"><span class="zh-t">用普通标点包住实体并写出实体类型，不必新增词表 token，效果反而更好。</span></span></div>
+    <div class="wall"><span class="tag">LIMIT<span class="zh-t"> · 瓶颈</span></span><span>The label set is frozen into the classifier head. A new relation means new labels and retraining.<span class="zh-t"> 标签集被固化在分类头里，新增关系就要重新标注、重新训练。</span></span>
+      <span class="tag next">NEXT<span class="zh-t"> · 下一步</span></span><span>Generate the structure as text and describe the schema in words.<span class="zh-t"> 把结构当文本生成，用自然语言描述关系模式。</span></span></div>
+    <details class="deep">
+      <summary>Go deeper<span class="zh-t"> · 深入</span></summary>
+      <div class="inner prose">
+        <ol class="papers">
+          <li>Baldini Soares et al., <a href="https://aclanthology.org/P19-1279/">Matching the Blanks</a> <span class="yr">ACL 2019</span></li>
+          <li>Zhou &amp; Chen, <a href="https://aclanthology.org/2022.aacl-short.21/">An Improved Baseline for Sentence-level Relation Extraction</a> <span class="yr">AACL 2022</span></li>
+          <li>Zhong &amp; Chen, <a href="https://aclanthology.org/2021.naacl-main.5/">PURE</a>: entity markers inside an end-to-end pipeline <span class="yr">NAACL 2021</span></li>
+        </ol>
+        <div class="think"><span class="label">THINK ABOUT IT<span class="zh-t"> · 思考题</span></span>Why does reading the [E1] start marker work better than averaging the entity's word pieces or using [CLS]?
+          <details><summary>Show a hint<span class="zh-t"> · 看提示</span></summary>The marker is a dedicated slot that attends to the whole sentence while “standing for” the entity, so it holds pair-specific context. [CLS] has to summarize the sentence for every possible pair.<span class="zh-t"> 标记是专门为该实体设的位置，同时关注全句；[CLS] 要为所有可能的实体对概括整句。</span></details></div>
+      </div>
+    </details>
+  </article>
+
+  <article class="era" id="era7">
+    <div class="era-top"><span class="pill">2021 →</span><h3>Generative models and LLMs<span class="zh"><span class="zh-t">生成式与大模型</span></span></h3><span class="pill src">source: instructions, prompts</span></div>
+    <dl class="kv">
+      <dt>Core idea<br><span class="zh-t">核心</span></dt><dd>Treat extraction as text generation. Seq2seq models linearize triples (REBEL 2021, TANL 2021); UIE (2022) defined one structure language for many IE tasks; InstructUIE (2023) and GoLLIE (2024) instruction-tuned on IE datasets, GoLLIE with annotation guidelines written as code; and general LLMs are simply prompted with the schema.
+      <span class="zh"><span class="zh-t">把抽取当成生成：seq2seq 线性化三元组（REBEL、TANL）；UIE 用统一结构语言覆盖多种 IE 任务；InstructUIE、GoLLIE 在 IE 数据上做指令微调（GoLLIE 把标注指南写成代码）；通用 LLM 直接用提示描述关系模式。</span></span></dd>
+    </dl>
+    <div class="two">
+      <div class="card">
+        <h4>Seq2seq linearization · REBEL</h4>
+        <pre>input:  Marie Curie was born in Warsaw.
+output: &lt;triplet&gt; Marie Curie
+        &lt;subj&gt; Warsaw
+        &lt;obj&gt; place of birth</pre>
+        <span class="zh"><span class="zh-t">把三元组写成一串特殊标记文本，让模型直接“写”出来；关系名用自然语言（Wikidata 属性名）。</span></span>
+      </div>
+      <div class="card">
+        <h4>Prompting an LLM<span class="zh-t"> · 提示大模型</span></h4>
+        <pre>Relations: born_in, employee_of,
+           spouse_of
+Text: Marie Curie was born in Warsaw.
+Return JSON triples.
+→ [{"s":"Marie Curie","r":"born_in",
+    "o":"Warsaw"}]</pre>
+        <span class="zh"><span class="zh-t">关系表写在提示里：换一套关系只需改提示，不必重新训练。</span></span>
+      </div>
+    </div>
+    <div class="callout">
+      <span class="label">THE EVIDENCE IS MIXED<span class="zh-t"> · 证据并不一致</span></span>
+      Han et al. (2023) evaluated ChatGPT on 17 datasets and 14 IE subtasks and found a large gap to state-of-the-art models, widest on the harder tasks; zero-shot relation classification on TACRED and triplet extraction were among the weakest results. Li, Wang &amp; Ke (2023) reported that a summarize-then-ask prompt (SumAsk) made ChatGPT competitive with, and on TACRED above, the best supervised model. Prompt design and label-set size swing the results; TACRED's 42 labels are harder than SemEval's 10.
+      <span class="zh">Han<span class="zh-t"> 等发现零样本 ChatGPT 在关系分类和三元组抽取上偏弱；Li 等用“先总结再提问”的提示让 ChatGPT 在 TACRED 上超过最好的有监督模型。结论高度依赖提示设计和标签数量。</span></span>
+    </div>
+    <div class="wall"><span class="tag">LIMIT<span class="zh-t"> · 瓶颈</span></span><span>Hallucinated or off-schema triples, exact-match scoring that undercounts valid paraphrases, and cost at corpus scale. A common pattern: the LLM labels data, a small model does the extraction.<span class="zh-t"> 幻觉或越界三元组、精确匹配评测低估合理改写、全语料运行成本高。常见做法：LLM 造数据，小模型做抽取。</span></span>
+      <span class="tag next">NOW<span class="zh-t"> · 现在</span></span><span>See the open problems in <a href="#frontier">§07</a>.<span class="zh-t"> 见第 07 节开放问题。</span></span></div>
+    <details class="deep">
+      <summary>Go deeper<span class="zh-t"> · 深入</span></summary>
+      <div class="inner prose">
+        <ol class="papers">
+          <li>Huguet Cabot &amp; Navigli, <a href="https://aclanthology.org/2021.findings-emnlp.204/">REBEL: Relation Extraction By End-to-end Language generation</a> <span class="yr">Findings EMNLP 2021</span></li>
+          <li>Lu et al., <a href="https://aclanthology.org/2022.acl-long.395/">Unified Structure Generation for Universal Information Extraction (UIE)</a> <span class="yr">ACL 2022</span></li>
+          <li>Sainz et al., GoLLIE: Annotation Guidelines improve Zero-Shot Information-Extraction <span class="yr">ICLR 2024</span></li>
+          <li>Han et al., <a href="https://arxiv.org/abs/2305.14450v1">Is Information Extraction Solved by ChatGPT?</a> <span class="yr">arXiv 2023 (v1; later revised under a new title)</span></li>
+          <li>Li, Wang &amp; Ke, <a href="https://arxiv.org/abs/2310.05028">Revisiting Large Language Models as Zero-shot Relation Extractors</a> <span class="yr">Findings EMNLP 2023</span></li>
+          <li>Wadhwa, Amir &amp; Wallace, Revisiting Relation Extraction in the era of Large Language Models <span class="yr">ACL 2023</span>: argues exact-match scoring undercounts generative outputs.</li>
+        </ol>
+        <div class="think"><span class="label">THINK ABOUT IT<span class="zh-t"> · 思考题</span></span>An LLM outputs <span class="mono">(Marie Curie, birthplace, Warsaw)</span> but the gold label is <span class="mono">born_in</span>. Is that an error? How would you score it fairly?
+          <details><summary>Show a hint<span class="zh-t"> · 看提示</span></summary>Constrain decoding to the schema, or map outputs to the label set (string normalization, embedding match, or an LLM judge) and report the mapping step separately, so its errors are visible.<span class="zh-t"> 约束解码到关系表，或把输出映射到标签集，并单独报告映射步骤的误差。</span></details></div>
+      </div>
+    </details>
+  </article>
+</section>
+
+<section id="lowres">
+  <div class="sec-head"><span class="sec-num">05 · A CROSS-CUTTING BRANCH</span><h2>Few-shot and zero-shot RE<span class="zh"><span class="zh-t">少样本与零样本：横跨多代方法的支线</span></span></h2></div>
+  <p class="prose"><b>Few-shot</b> RE asks a model to learn a new relation from a handful of examples. FewRel (Han et al., 2018; 100 relations, 70,000 instances from Wikipedia) framed it as <i>N-way K-shot</i> episodes, and prototypical networks became the classic baseline: average the K support examples into a prototype and assign the query to the nearest one.
+  <span class="zh"><span class="zh-t">少样本：每个新关系只给几个例子。FewRel 用“N 类 K 样本”的回合来评测；原型网络把 K 个样本平均成“原型”，查询句归到最近的原型。</span></span></p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 760 314" role="img" aria-label="A 3-way 2-shot episode: two support sentences each for born_in, spouse_of and founder_of are averaged into prototypes. The query Gates co-founded Microsoft is nearest the founder_of prototype.">
+      <text x="24" y="26" class="f12 fmu">support set · 3-way 2-shot<tspan class="zh-t"> 支持集</tspan></text>
+      <text x="585" y="26" text-anchor="middle" class="f12 fmu">prototypes<tspan class="zh-t"> 原型</tspan></text>
+      <rect x="24" y="48" width="100" height="36" rx="8" fill="#efeafd" stroke="#7048e8"/><text x="74" y="71" text-anchor="middle" class="fm f12" fill="#5a36c9">born_in</text>
+      <rect x="136" y="48" width="190" height="36" rx="8" class="bt"/><text x="231" y="71" text-anchor="middle" class="f12">Curie was born in Warsaw.</text>
+      <rect x="340" y="48" width="190" height="36" rx="8" class="bt"/><text x="435" y="71" text-anchor="middle" class="f12">Turing was born in London.</text>
+      <line x1="531" y1="66" x2="571" y2="66" class="faint"/><circle cx="585" cy="66" r="13" fill="#7048e8"/>
+      <rect x="24" y="116" width="100" height="36" rx="8" fill="#e3f4f7" stroke="#0c8599"/><text x="74" y="139" text-anchor="middle" class="fm f12" fill="#0b6b7a">spouse_of</text>
+      <rect x="136" y="116" width="190" height="36" rx="8" class="bt"/><text x="231" y="139" text-anchor="middle" class="f12">Marie married Pierre Curie.</text>
+      <rect x="340" y="116" width="190" height="36" rx="8" class="bt"/><text x="435" y="139" text-anchor="middle" class="f12">Ada married William King.</text>
+      <line x1="531" y1="134" x2="571" y2="134" class="faint"/><circle cx="585" cy="134" r="13" fill="#0c8599"/>
+      <rect x="24" y="184" width="100" height="36" rx="8" class="tr"/><text x="74" y="207" text-anchor="middle" class="fm f12 fr">founder_of</text>
+      <rect x="136" y="184" width="190" height="36" rx="8" class="bt"/><text x="231" y="207" text-anchor="middle" class="f12">Jobs co-founded Apple.</text>
+      <rect x="340" y="184" width="190" height="36" rx="8" class="bt"/><text x="435" y="207" text-anchor="middle" class="f12">Page co-founded Google.</text>
+      <line x1="531" y1="202" x2="571" y2="202" class="faint"/><circle cx="585" cy="202" r="13" fill="#2b8a3e"/>
+      <rect x="136" y="252" width="394" height="40" rx="8" class="th"/>
+      <text x="333" y="277" text-anchor="middle" class="f13">query<tspan class="zh-t"><tspan class="zh-t"> 查询</tspan></tspan>: “<tspan class="fs">Gates</tspan> co-founded <tspan class="fo">Microsoft</tspan>.”</text>
+      <line x1="532" y1="262" x2="575" y2="76" class="ln dash"/>
+      <line x1="532" y1="266" x2="575" y2="144" class="ln dash"/>
+      <line x1="532" y1="270" x2="575" y2="212" class="ln-r"/>
+      <text x="606" y="70" class="f12 fm fmu">d = 0.81</text>
+      <text x="606" y="138" class="f12 fm fmu">d = 0.77</text>
+      <text x="606" y="206" class="f12 fm fr fb">d = 0.12 ✓ nearest</text>
+    </svg>
+    </div>
+    <figcaption><b>Learn to compare, not to classify.</b> The model is trained across many such episodes, so at test time it can handle relations it never saw in training. Distances here are illustrative.<span class="zh-t"> 学会“比较”而不是“分类”：在大量回合上训练，测试时可以处理从未见过的关系（图中距离仅为示意）。</span></figcaption>
+  </figure>
+  <p class="prose"><b>Zero-shot</b> RE goes further: no examples at all, only a description of the relation. The trick, again and again, is to <b>rewrite the relation as another task the model already knows</b>.
+  <span class="zh"><span class="zh-t">零样本：一个例子都没有，只有关系的描述。反复出现的技巧是：把关系改写成模型已经会做的另一种任务。</span></span></p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Reformulate as</th><th>Relation becomes</th><th>Key paper</th></tr></thead>
+      <tbody>
+        <tr><td>Reading comprehension<br><span class="zh"><span class="zh-t">阅读理解</span></span></td><td><span class="mono">educated_at</span> → “Where did <span class="s">X</span> study?” The answer span is the object.</td><td>Levy et al., <a href="https://aclanthology.org/K17-1034/">Zero-Shot RE via Reading Comprehension</a>, CoNLL 2017</td></tr>
+        <tr><td>Multi-turn QA<br><span class="zh"><span class="zh-t">多轮问答</span></span></td><td>First ask for the subject, then ask relation-specific questions for its objects.</td><td>Li et al., <a href="https://aclanthology.org/P19-1129/">Entity-Relation Extraction as Multi-turn QA</a>, ACL 2019</td></tr>
+        <tr><td>Textual entailment<br><span class="zh"><span class="zh-t">文本蕴含</span></span></td><td>Verbalize the label: does the text entail “<span class="s">{subj}</span> was born in <span class="o">{obj}</span>”?</td><td>Sainz et al., <a href="https://aclanthology.org/2021.emnlp-main.92/">Label Verbalization and Entailment</a>, EMNLP 2021</td></tr>
+        <tr><td>Instruction following<br><span class="zh"><span class="zh-t">指令跟随</span></span></td><td>Describe the relation in the prompt, optionally with guidelines and examples.</td><td>GoLLIE (2024); LLM prompting (§04, era 7)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose">Notice the question templates and verbalizations: “Where did X study?” and “X was born in Y” are Hearst-style patterns pointed the other way, from relation to text. <span class="zh"><span class="zh-t">注意这些问题模板和言语化：它们就是反方向的 Hearst 模板——从关系生成文本，而不是从文本匹配关系。</span></span></p>
+</section>
+
+<section id="bench">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Benchmarks and how they are scored<span class="zh"><span class="zh-t">基准数据集与评测方式</span></span></h2></div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Dataset</th><th>Year</th><th>Setting<span class="zh-t"> · 设定</span></th><th>Relations</th><th>Size</th><th>Watch out for<span class="zh-t"> · 注意</span></th></tr></thead>
+      <tbody>
+        <tr><td>SemEval-2010 Task 8</td><td class="num">2010</td><td>sentence, classify</td><td class="num">9 + Other</td><td class="num">10,717 sent.</td><td>direction is part of the label<span class="zh-t"> 方向即标签</span></td></tr>
+        <tr><td>ACE 2005</td><td class="num">2005</td><td>sentence, end-to-end</td><td class="num">6 coarse types</td><td class="num">news, web, speech</td><td>many papers use different splits<span class="zh-t"> 划分不统一</span></td></tr>
+        <tr><td>NYT10</td><td class="num">2010</td><td>distant supervision</td><td class="num">53 incl. NA</td><td class="num">Freebase × NYT</td><td>noisy held-out evaluation<span class="zh-t"> 自动评测有噪声</span></td></tr>
+        <tr><td>TACRED</td><td class="num">2017</td><td>sentence, classify</td><td class="num">41 + no_relation</td><td class="num">106,264</td><td>about 80% no_relation; label noise<span class="zh-t"> 负例多、标注噪声</span></td></tr>
+        <tr><td>Re-TACRED</td><td class="num">2021</td><td>relabeled TACRED</td><td class="num">40</td><td class="num">same sentences</td><td>use it instead of raw TACRED<span class="zh-t"> 优先用它</span></td></tr>
+        <tr><td>FewRel</td><td class="num">2018</td><td>few-shot</td><td class="num">100</td><td class="num">70,000</td><td>N-way K-shot protocol<span class="zh-t"> 回合式评测</span></td></tr>
+        <tr><td>DocRED</td><td class="num">2019</td><td>document-level</td><td class="num">96</td><td class="num">5,053 docs</td><td>missing labels; see Re-DocRED (2022)<span class="zh-t"> 漏标严重</span></td></tr>
+        <tr><td>NYT / WebNLG</td><td class="num">2018</td><td>end-to-end triples</td><td class="num">24 / hundreds</td><td class="num">—</td><td>overlap-heavy; versions differ<span class="zh-t"> 版本多</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="two">
+    <div class="card"><h4>Scoring rules that trip people up</h4>
+      <ul class="papers" style="padding-left:18px">
+        <li>TACRED reports <b>micro-F1 without no_relation</b>; otherwise always predicting no_relation would look excellent. <span class="zh">TACRED<span class="zh-t"> 的 micro-F1 不计 no_relation。</span></span></li>
+        <li>SemEval's official score is <b>macro-F1 over the 9 relations</b>, direction included. <span class="zh">SemEval<span class="zh-t"> 官方：9 类宏平均 F1，计方向。</span></span></li>
+        <li>End-to-end: <b>strict</b> (boundaries + entity type + relation) and <b>boundaries-only</b> numbers are not comparable (Taillé et al., 2020). <span class="zh"><span class="zh-t">端到端的严格评测与只看边界评测不可混比。</span></span></li>
+      </ul></div>
+    <div class="card"><h4>Label noise is real</h4>
+      <p style="font-size:15px">Alt et al. (<a href="https://aclanthology.org/2020.acl-main.142/">TACRED Revisited</a>, ACL 2020) found many TACRED dev and test labels wrong; correcting them changed model rankings. Re-TACRED (Stoica et al., 2021) relabeled the whole set.
+      <span class="zh">TACRED<span class="zh-t"> 开发集和测试集有大量错标，纠正后模型排名会变；Re-TACRED 重新标注了全集。</span></span></p></div>
+  </div>
+</section>
+
+<section id="frontier">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Full circle, and the open problems<span class="zh"><span class="zh-t">兜了一圈，以及开放问题</span></span></h2></div>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 24 760 170" role="img" aria-label="Three templates across 30 years: a 1992 Hearst pattern matched in text, a 2021 label verbalization fed to an entailment model, and a 2023 LLM prompt question.">
+      <defs><marker id="m9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5a6575"/></marker></defs>
+      <rect x="16" y="36" width="224" height="104" rx="12" class="th"/>
+      <text x="32" y="60" class="f12 fm fmu">1992 · Hearst</text>
+      <text x="32" y="82" class="f13 fb">pattern matched in text</text>
+      <text x="32" y="114" class="fm f12"><tspan class="fo">NP</tspan> <tspan class="fr">such as</tspan> <tspan class="fs">NP</tspan>, <tspan class="fs">NP</tspan> …</text>
+      <rect x="268" y="36" width="224" height="104" rx="12" class="bx"/>
+      <text x="284" y="60" class="f12 fm fmu">2021 · label verbalization</text>
+      <text x="284" y="82" class="f13 fb">template fed to an NLI model</text>
+      <text x="284" y="114" class="fm f12"><tspan class="fs">{subj}</tspan> <tspan class="fr">was born in</tspan> <tspan class="fo">{obj}</tspan>.</text>
+      <rect x="520" y="36" width="224" height="104" rx="12" class="tr"/>
+      <text x="536" y="60" class="f12 fm fmu">2023+ · LLM prompting</text>
+      <text x="536" y="82" class="f13 fb">template is the model input</text>
+      <text x="536" y="114" class="fm f12">Is <tspan class="fs">{Y}</tspan> <tspan class="fr">a kind of</tspan> <tspan class="fo">{X}</tspan>?</text>
+      <line x1="242" y1="88" x2="264" y2="88" class="ln" marker-end="url(#m9)"/>
+      <line x1="494" y1="88" x2="516" y2="88" class="ln" marker-end="url(#m9)"/>
+      <text x="380" y="176" text-anchor="middle" class="f13">Same idea, new place: the template moved from the matcher into the model's input.</text>
+    </svg>
+    </div>
+    <figcaption><b>Patterns did not disappear; they changed jobs.</b> In 1992 a template decided whether a fact was present; today a template tells a model what to look for.<span class="zh-t"> 模板没有消失，只是换了岗位：1992 年模板决定“有没有这条事实”，今天模板告诉模型“要找什么”。</span></figcaption>
+  </figure>
+  <div class="two">
+    <div class="card"><h4>1 · Faithful extraction</h4><p style="font-size:15px">Can every generated triple be traced to an evidence span? Generative extractors can produce fluent triples the text never states. <span class="zh"><span class="zh-t">可溯源：每个生成的三元组能否对应到原文证据？生成式模型会“编”出原文没说的三元组。</span></span></p></div>
+    <div class="card"><h4>2 · Fair evaluation of generative RE</h4><p style="font-size:15px">Exact match penalizes valid paraphrases; LLM judges bring their own bias. How should open outputs be scored? <span class="zh"><span class="zh-t">评测：精确匹配惩罚合理改写，LLM 当裁判又有自身偏差。</span></span></p></div>
+    <div class="card"><h4>3 · Document- and corpus-level reasoning</h4><p style="font-size:15px">Coreference, multi-hop evidence and incomplete gold labels (DocRED → Re-DocRED) remain hard, even for long-context models. <span class="zh"><span class="zh-t">文档级与语料级推理：共指、多跳证据、金标不全，长上下文模型也没解决。</span></span></p></div>
+    <div class="card"><h4>4 · Schema following at scale</h4><p style="font-size:15px">Real schemas have hundreds of relations with fine distinctions. Guidelines (GoLLIE) help; keeping a model inside the schema is still an open problem. <span class="zh"><span class="zh-t">大规模关系模式：真实场景有成百上千个细粒度关系，让模型严格遵守模式仍未解决。</span></span></p></div>
+  </div>
+  <p class="prose" style="margin-top:16px">Two recent surveys for the current landscape: Ringwald et al. (2025) systematically review 2019–2024 work (34 surveys, 64 datasets, 104 models), and Diaz-Garcia &amp; Diaz Lopez (2025) analyze 137 ACL papers from 2020–2023 and note that BERT-based models still dominate state-of-the-art results while LLMs show promise in few-shot settings.
+  <span class="zh"><span class="zh-t">两篇近期综述：Ringwald 等系统回顾 2019–2024（34 篇综述、64 个数据集、104 个模型）；Diaz-Garcia 等分析 2020–2023 年 137 篇 ACL 论文，指出 BERT 类模型仍主导 SOTA，LLM 在少样本场景中有潜力。</span></span></p>
+</section>
+
+<section id="path">
+  <div class="sec-head"><span class="sec-num">08</span><h2>A path for going deeper<span class="zh"><span class="zh-t">深入学习路线</span></span></h2></div>
+  <div class="era" style="margin-top:0">
+    <div class="era-top"><span class="pill">1–2 days</span><h3>Level 1 · Own the map<span class="zh"><span class="zh-t">第一层：掌握地图</span></span></h3></div>
+    <p class="prose" style="margin-top:12px">Read Hearst (1992), Mintz et al. (2009), Zhou &amp; Chen (2022) and one survey. Goal: redraw the two-axis map from memory and place any new paper on it in under a minute.
+    <span class="zh"><span class="zh-t">读 Hearst、Mintz、Zhou &amp; Chen 和一篇综述。目标：凭记忆画出两轴地图，一分钟内给任何新论文定位。</span></span></p>
+  </div>
+  <div class="era">
+    <div class="era-top"><span class="pill">1–2 weeks</span><h3>Level 2 · Build the ladder<span class="zh"><span class="zh-t">第二层：动手搭梯子</span></span></h3></div>
+    <ol class="ladder" style="margin-top:14px">
+      <li><span><b>Regex Hearst extractor</b> on a slice of Wikipedia. Hand-check 100 outputs for precision. <span class="zh"><span class="zh-t">在维基百科片段上实现 Hearst 正则抽取，人工检查 100 条算精确率。</span></span></span></li>
+      <li><span><b>Entity-marker classifier</b> on Re-TACRED (or SemEval-2010 for speed). Report micro-F1 without no_relation. <span class="zh"><span class="zh-t">在 Re-TACRED 上训练实体标记分类器，报告不含 no_relation 的 micro-F1。</span></span></span></li>
+      <li><span><b>REBEL end-to-end</b> on the same Wikipedia text. Compare its triples with step 1. <span class="zh"><span class="zh-t">用 REBEL 对同一批文本做端到端抽取，与第 1 步对比。</span></span></span></li>
+      <li><span><b>LLM with a JSON schema</b>. Score it by exact match and by manual check, and write down every case where exact match is unfair. <span class="zh"><span class="zh-t">用 LLM + JSON 模式抽取，分别用精确匹配和人工检查打分，记录精确匹配不公平的案例。</span></span></span></li>
+    </ol>
+  </div>
+  <div class="era">
+    <div class="era-top"><span class="pill">1 month +</span><h3>Level 3 · Pick an open problem<span class="zh"><span class="zh-t">第三层：选一个开放问题</span></span></h3></div>
+    <p class="prose" style="margin-top:12px">Choose one of the four in <a href="#frontier">§07</a>. Reproduce one strong baseline, then change exactly one thing. The ladder in Level 2 already gives you the comparison harness.
+    <span class="zh"><span class="zh-t">从第 07 节四个问题中选一个：复现一个强基线，然后只改一个变量。第二层的梯子已经给了你对比框架。</span></span></p>
+  </div>
+  <h3>Self-check<span class="zh-t"> · 自测</span></h3>
+  <div class="think"><span class="label">Q1</span>Why does a Hearst matcher have high precision but low recall?
+    <details><summary>Answer<span class="zh-t"> · 答案</span></summary>Its templates are specific enough that a match is usually right, but most facts are written in other forms the templates never see.<span class="zh-t"> 模板足够具体，匹配到通常是对的；但大多数事实是用别的句式写的。</span></details></div>
+  <div class="think"><span class="label">Q2</span>State the distant-supervision assumption and its two failure modes.
+    <details><summary>Answer<span class="zh-t"> · 答案</span></summary>Every sentence mentioning a KB pair expresses the KB relation. It fails by false positives (co-mention without the relation) and false negatives (the relation is in the text but missing from the KB).<span class="zh-t"> 假阳性（共现但不表达该关系）与假阴性（文本表达了但知识库没有）。</span></details></div>
+  <div class="think"><span class="label">Q3</span>Why can't a single BIO tag sequence represent entity-pair overlap?
+    <details><summary>Answer<span class="zh-t"> · 答案</span></summary>Each token gets one tag, but in EPO the same two spans need two different relation labels at once.<span class="zh-t"> 每个词只能有一个标签，而 EPO 需要同一对实体同时带两个关系标签。</span></details></div>
+  <div class="think"><span class="label">Q4</span>In what sense is an LLM extraction prompt a Hearst pattern?
+    <details><summary>Answer<span class="zh-t"> · 答案</span></summary>Both encode human knowledge of how a relation is expressed as a text template; the prompt hands it to the model instead of a regex.<span class="zh-t"> 两者都把“关系如何表达”的人类知识写成文本模板，只是交给模型而不是正则。</span></details></div>
+</section>
+
+<section id="glossary">
+  <div class="sec-head"><span class="sec-num">09</span><h2>Glossary<span class="zh"><span class="zh-t">术语表</span></span></h2></div>
+  <div class="tablewrap">
+    <table id="gloss">
+      <thead><tr><th>Term</th><th><span class="zh-t">中文</span></th><th>In one line</th></tr></thead>
+      <tbody>
+        <tr><td>triple</td><td><span class="zh-t">三元组</span></td><td><span class="mono">(subject, relation, object)</span>, one edge of a knowledge graph</td></tr>
+        <tr><td>entity mention</td><td><span class="zh-t">实体提及</span></td><td>a span of text that refers to an entity (“She”, “Ada Lovelace”)</td></tr>
+        <tr><td>relation schema</td><td><span class="zh-t">关系模式 / 关系表</span></td><td>the fixed list of relation types in closed RE</td></tr>
+        <tr><td>hypernym / hyponym</td><td><span class="zh-t">上位词 / 下位词</span></td><td>“fruit” is a hypernym of “apple”; Hearst's target relation</td></tr>
+        <tr><td>no_relation / NA</td><td><span class="zh-t">无关系</span></td><td>the label for pairs that express none of the schema relations</td></tr>
+        <tr><td>Open IE</td><td><span class="zh-t">开放信息抽取</span></td><td>extraction where the relation is a text span, not a label</td></tr>
+        <tr><td>coreference</td><td><span class="zh-t">共指</span></td><td>“Her” and “Ada Lovelace” refer to the same entity</td></tr>
+        <tr><td>semantic drift</td><td><span class="zh-t">语义漂移</span></td><td>bootstrapping gradually extracting the wrong relation</td></tr>
+        <tr><td>shortest dependency path</td><td><span class="zh-t">最短依存路径</span></td><td>the path between two entities in the parse tree</td></tr>
+        <tr><td>distant supervision</td><td><span class="zh-t">远程监督</span></td><td>labels generated by aligning a KB to text</td></tr>
+        <tr><td>multi-instance learning</td><td><span class="zh-t">多示例学习</span></td><td>labels attach to a bag of sentences, not to each sentence</td></tr>
+        <tr><td>position embedding</td><td><span class="zh-t">位置向量</span></td><td>a token's encoded distance to each entity</td></tr>
+        <tr><td>entity marker</td><td><span class="zh-t">实体标记</span></td><td>special tokens or punctuation wrapped around each entity</td></tr>
+        <tr><td>pipeline / joint</td><td><span class="zh-t">流水线 / 联合</span></td><td>NER then RE, or both in one model</td></tr>
+        <tr><td>SEO / EPO</td><td><span class="zh-t">单实体重叠 / 实体对重叠</span></td><td>overlapping-triple types that break simple tagging</td></tr>
+        <tr><td>N-way K-shot</td><td>N<span class="zh-t"> 类 K 样本</span></td><td>a few-shot episode: N relations, K examples each</td></tr>
+        <tr><td>prototype</td><td><span class="zh-t">原型</span></td><td>the averaged representation of a relation's support examples</td></tr>
+        <tr><td>label verbalization</td><td><span class="zh-t">标签言语化</span></td><td>turning a label into a sentence template, e.g. “{subj} was born in {obj}”</td></tr>
+        <tr><td>micro-F1</td><td><span class="zh-t">微平均 F1</span></td><td>F1 pooled over all predictions; TACRED excludes no_relation</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="sources">
+  <div class="sec-head"><span class="sec-num">REFERENCES</span><h2>Sources<span class="zh"><span class="zh-t">参考文献（按出现顺序精选）</span></span></h2></div>
+  <ul class="sources">
+    <li>Hearst (1992), <a href="https://aclanthology.org/C92-2082/">Automatic Acquisition of Hyponyms from Large Text Corpora</a>, COLING.</li>
+    <li>Mintz et al. (2009), <a href="https://aclanthology.org/P09-1113/">Distant Supervision for Relation Extraction without Labeled Data</a>, ACL-IJCNLP.</li>
+    <li>Zhang et al. (2017), <a href="https://aclanthology.org/D17-1004/">TACRED</a>, EMNLP. Han et al. (2018), <a href="https://aclanthology.org/D18-1514/">FewRel</a>, EMNLP. Yao et al. (2019), <a href="https://aclanthology.org/P19-1074/">DocRED</a>, ACL.</li>
+    <li>Alt et al. (2020), <a href="https://aclanthology.org/2020.acl-main.142/">TACRED Revisited</a>, ACL.</li>
+    <li>Ringwald et al. (2025), <a href="https://arxiv.org/abs/2511.03610">A systematic review of relation extraction task since the emergence of Transformers</a>, arXiv.</li>
+    <li>Diaz-Garcia &amp; Diaz Lopez (2025), <a href="https://arxiv.org/abs/2411.18157">A survey on cutting-edge relation extraction techniques based on language models</a>, Artificial Intelligence Review 58, 287.</li>
+    <li>Li, Wang &amp; Ke (2023), <a href="https://arxiv.org/abs/2310.05028">Revisiting Large Language Models as Zero-shot Relation Extractors</a>, Findings of EMNLP.</li>
+    <li>Han et al. (2023), <a href="https://arxiv.org/abs/2305.14450v1">Is Information Extraction Solved by ChatGPT?</a>, arXiv (v1).</li>
+  </ul>
+  <footer>November 2026 · Illustrations are original diagrams drawn for this page; example sentences are short classic fragments or constructed for teaching.<span class="zh-t"> 插图为本页原创示意图；示例句为经典短句或</span></footer>
+</section>
+
+</main>
+</div>
+<script>
+(function () {
+  var input = document.getElementById('hearst-input');
+  var out = document.getElementById('hearst-out');
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('.presets button'));
+  if (!input || !out) return;
+  var DET = new Set(['the','a','an','some','many','most','all','other','several','various','certain']);
+  var STOP = new Set(['is','are','was','were','be','been','being','has','have','had','can','could','will','would','may','might','must','shall','should','do','does','did','that','which','who','whom','in','on','at','for','to','from','with','by','of','into','about','require','requires','joined','treated','plucked','etc','also','i','we','you','he','she','they','it','my','our','your','their','saw','see','like','love','visited']);
+  var preset = { note: '', warn: false };
+
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function zh(s) {
+    var k = s.search(/[\u3400-\u9fff]/);
+    if (k < 0) return esc(s);
+    var j = k;
+    while (j > 0 && s[j - 1] === ' ') j--;
+    if (j > 0 && s[j - 1] === '·') { j--; while (j > 0 && s[j - 1] === ' ') j--; }
+    return esc(s.slice(0, j)) + '<span class="zh-t">' + esc(s.slice(j)) + '</span>';
+  }
+  function toks(s) { return s.replace(/[“”"()]/g, ' ').trim().split(/\s+/).map(function (x) { return x.replace(/^[^A-Za-z0-9-]+|[^A-Za-z0-9-]+$/g, ''); }).filter(Boolean); }
+  function front(s) {
+    var w = toks(s);
+    while (w.length && DET.has(w[0].toLowerCase())) w.shift();
+    var r = [];
+    for (var i = 0; i < w.length && r.length < 3; i++) { if (STOP.has(w[i].toLowerCase())) break; r.push(w[i]); }
+    return r.join(' ');
+  }
+  function tail(s, n) {
+    var w = toks(s), r = [];
+    for (var i = w.length - 1; i >= 0 && r.length < n; i--) { var l = w[i].toLowerCase(); if (STOP.has(l) || DET.has(l)) break; r.unshift(w[i]); }
+    return r.join(' ');
+  }
+  function splitList(seg) { return seg.split(/\s*,\s*(?:(?:and|or)\s+)?|\s+(?:and|or)\s+/i); }
+  function headBefore(pre) {
+    var w = toks(pre);
+    if (!w.length) return '';
+    var last = w[w.length - 1];
+    if (STOP.has(last.toLowerCase())) return '';
+    if (w.length >= 2) {
+      var prev = w[w.length - 2], pl = prev.toLowerCase();
+      var before = w.length >= 3 ? w[w.length - 3].toLowerCase() : null;
+      if (!STOP.has(pl) && !DET.has(pl) && (before === null || DET.has(before))) return prev + ' ' + last;
+    }
+    return last;
+  }
+  function sentenceStart(text, idx) { var m = text.slice(0, idx).search(/[.;!?][^.;!?]*$/); return m === -1 ? 0 : m + 1; }
+  function sentenceEnd(text, idx) { var m = text.slice(idx).search(/[.;!?]/); return m === -1 ? text.length : idx + m; }
+
+  function extract(text) {
+    var found = [], spans = [];
+    function addSpan(a, b, cls) {
+      if (a < 0 || b <= a) return;
+      for (var i = 0; i < spans.length; i++) { if (a < spans[i][1] && b > spans[i][0]) return; }
+      spans.push([a, b, cls]);
+    }
+    function locate(word, from, to, cls, last) {
+      if (!word) return;
+      var region = text.slice(from, to);
+      var i = last ? region.lastIndexOf(word) : region.indexOf(word);
+      if (i >= 0) addSpan(from + i, from + i + word.length, cls);
+    }
+    function forward(re, name) {
+      var m; re.lastIndex = 0;
+      while ((m = re.exec(text)) !== null) {
+        var cueA = m.index, cueB = m.index + m[0].length;
+        var sA = sentenceStart(text, cueA), sB = sentenceEnd(text, cueB);
+        var hyper = m[1] ? m[1] : headBefore(text.slice(sA, cueA));
+        if (!hyper) continue;
+        var items = splitList(text.slice(cueB, sB)).map(front);
+        var hypos = [];
+        for (var i = 0; i < items.length; i++) { if (!items[i]) break; if (items[i].toLowerCase() !== hyper.toLowerCase()) hypos.push(items[i]); }
+        if (!hypos.length) continue;
+        addSpan(cueA, cueB, 'cue');
+        if (!m[1]) locate(hyper, sA, cueA, 'o', true); else locate(hyper, cueA, cueB, 'o', false);
+        var cursor = cueB;
+        hypos.forEach(function (h) { var j = text.indexOf(h, cursor); if (j >= 0 && j < sB) { addSpan(j, j + h.length, 's'); cursor = j + h.length; } found.push({ s: h, o: hyper, p: name }); });
+      }
+    }
+    function backward(re, name) {
+      var m; re.lastIndex = 0;
+      while ((m = re.exec(text)) !== null) {
+        var cueA = m.index, cueB = m.index + m[0].length;
+        var sA = sentenceStart(text, cueA), sB = sentenceEnd(text, cueB);
+        var hyper = front(text.slice(cueB, sB));
+        if (!hyper) continue;
+        var parts = splitList(text.slice(sA, cueA));
+        var hypos = parts.map(function (p, i) { return i === 0 ? tail(p, 1) : front(p); }).filter(Boolean);
+        if (!hypos.length) continue;
+        addSpan(cueA, cueB, 'cue');
+        locate(hyper, cueB, sB, 'o', false);
+        var cursor = sA;
+        hypos.forEach(function (h) { var j = text.indexOf(h, cursor); if (j >= 0 && j < cueA) { addSpan(j, j + h.length, 's'); cursor = j + h.length; } found.push({ s: h, o: hyper, p: name }); });
+      }
+    }
+    forward(/,?\s+such\s+as\s+/gi, 'NP such as NP');
+    forward(/\bsuch\s+([A-Za-z-]+(?:\s+[A-Za-z-]+)?)\s+as\s+/gi, 'such NP as NP');
+    forward(/,?\s+including\s+/gi, 'NP including NP');
+    forward(/,?\s+especially\s+/gi, 'NP especially NP');
+    backward(/,?\s+or\s+other\s+/gi, 'NP or other NP');
+    backward(/,?\s+and\s+other\s+/gi, 'NP and other NP');
+    return { found: found, spans: spans.sort(function (a, b) { return a[0] - b[0]; }) };
+  }
+
+  function render() {
+    var text = input.value;
+    var res = extract(text);
+    var html = '', pos = 0;
+    res.spans.forEach(function (sp) {
+      html += esc(text.slice(pos, sp[0]));
+      var inner = esc(text.slice(sp[0], sp[1]));
+      html += sp[2] === 'cue' ? '<mark>' + inner + '</mark>' : '<span class="' + sp[2] + '">' + inner + '</span>';
+      pos = sp[1];
+    });
+    html += esc(text.slice(pos));
+    var body = '<div class="sent">' + (html || '<span class="note">' + zh('Type a sentence above. 在上方输入句子。') + '</span>') + '</div>';
+    if (res.found.length) {
+      body += '<div class="found">' + res.found.map(function (f) {
+        return '<span class="t">(<span class="s">' + esc(f.s) + '</span>, <span class="r">is-a</span>, <span class="o">' + esc(f.o) + '</span>) <span style="color:var(--muted);font-size:12px">· ' + esc(f.p) + '</span></span>';
+      }).join('') + '</div>';
+    } else if (text.trim()) {
+      body += '<div class="found"><span class="t" style="color:var(--muted)">' + zh('no pattern fired 未触发任何模板') + '</span></div>';
+    }
+    var note = preset.note;
+    var warn = preset.warn;
+    if (!note) {
+      note = res.found.length
+        ? 'Each match is only a candidate. Hearst kept pairs that recurred across a large corpus. 每次匹配只是候选，Hearst 只保留在大语料中反复出现的对。'
+        : 'Nothing matched. The fact may still be in the sentence, but only six phrasings are covered: that is the recall problem. 没有匹配：事实可能仍在句中，但模板只覆盖六种句式，这就是召回问题。';
+    }
+    body += '<p class="note' + (warn ? ' warn' : '') + '">' + zh(note) + '</p>';
+    out.innerHTML = body;
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      input.value = b.getAttribute('data-text');
+      preset = { note: b.getAttribute('data-note') || '', warn: b.getAttribute('data-warn') === '1' };
+      buttons.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      render();
+    });
+  });
+  input.addEventListener('input', function () {
+    preset = { note: '', warn: false };
+    buttons.forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+    render();
+  });
+  var root = document.documentElement, tog = document.getElementById('zh-toggle');
+  function setZh(on, save) {
+    root.classList.toggle('zh-off', !on);
+    tog.setAttribute('aria-checked', on ? 'true' : 'false');
+    if (save) { try { localStorage.setItem('re-guide-zh', on ? '1' : '0'); } catch (e) {} }
+  }
+  if (tog) {
+    var saved = null;
+    try { saved = localStorage.getItem('re-guide-zh'); } catch (e) {}
+    setZh(saved === '1', false);
+    tog.addEventListener('click', function () { setZh(root.classList.contains('zh-off'), true); });
+  }
+  var first = buttons[0];
+  if (first) preset = { note: first.getAttribute('data-note') || '', warn: false };
+  render();
+})();
+</script>
+</body>
+</html>
