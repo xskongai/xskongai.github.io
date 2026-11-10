@@ -467,6 +467,14 @@ footer { margin-top: 50px; padding-top: 24px; }
   .ex li { column-gap: 8px; }
 }
 
+
+.ex .sentence-examples{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.sentence-example{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 10px;background:var(--tint);border-radius:8px;font-size:15px}
+.sentence-example .zh{display:block}
+@media(max-width:640px){
+  .ex li.with-sentences{grid-template-columns:minmax(0,1fr)}
+  .ex .sentence-examples{grid-template-columns:minmax(0,1fr)}
+}
 </style>
 </head>
 <body>
@@ -1114,12 +1122,33 @@ D.drop=[
 ];
 
 D.link=[
+ {title:"Everyday linking: this is, that is, it is",zh:"日常高频连读",
+  desc:"Read the linked words in one smooth motion. The IPA below shows just the sounds at the word boundary. Each phrase has two short sentences you can play separately.",
+  descZh:"把标有 ‿ 的词顺着读，中间不停顿。音标只标出词与词相接的两个音，每个组合有两条短句，可分别播放。",
+  type:"rows",items:[
+   G("Before is","接 is"),
+   R("this‿is","thi-siz",{ipa:"/s‿ɪ/",examples:[["This is my stop.", "我到站了。"], ["This is for you.", "这是给你的。"]]}),
+   R("that‿is","tha-tiz",{ipa:"/t‿ɪ/",examples:[["That is a good question.", "这是个好问题。"], ["That is my seat.", "那是我的座位。"]]}),
+   R("it‿is","i-tiz",{ipa:"/t‿ɪ/",examples:[["It is what it is.", "事情就是这样。"], ["It is getting late.", "时间不早了。"]]}),
+   R("what‿is","wha-tiz",{ipa:"/t‿ɪ/",examples:[["What is your name?", "你叫什么名字？"], ["What is the plan?", "计划是什么？"]]}),
+   R("which‿is","wi-chiz",{ipa:"/tʃ‿ɪ/",examples:[["Which is better?", "哪个更好？"], ["Which is yours?", "哪个是你的？"]]}),
+   G("Before a or an","接 a 或 an"),
+   R("there’s‿a","there-_zə_",{ipa:"/z‿ə/",examples:[["There's a café nearby.", "附近有一家咖啡馆。"], ["There's a bus at nine.", "九点有一班公交车。"]]}),
+   R("here’s‿an","here-_zən_",{ipa:"/z‿ə/",examples:[["Here's an example.", "举个例子。"], ["Here's an idea.", "我有个主意。"]]}),
+   R("have‿a","ha-_və_",{ipa:"/v‿ə/",examples:[["Have a good day!", "祝你今天愉快！"], ["Can I have a look?", "我能看一下吗？"]]}),
+   R("take‿a","tay-_kə_",{ipa:"/k‿ə/",examples:[["Take a look.", "看一下。"], ["Let's take a break.", "我们休息一下吧。"]]}),
+   G("Two or more links in a row","一句话里的多处连读"),
+   R("turn‿it‿off","tur-ni-'TOFF",{ipa:"/n‿ɪ/, /t‿ɒ/ (UK)",examples:[["Could you turn it off?", "你能把它关掉吗？"], ["Turn it off before you leave.", "离开前把它关掉。"]]}),
+   R("this‿is‿a good‿idea","thi-si-_zə_ goo-dai-'DE-a",{ipa:"/s‿ɪ/, /z‿ə/, /d‿aɪ/",examples:[["This is a good idea.", "这是个好主意。"], ["I think this is a good idea.", "我觉得这是个好主意。"]]})
+  ],
+  note:"Linking keeps both words: it‿is still has two syllables. A contraction like it’s has just one. The /t/ examples show the consonant you are connecting; in relaxed American speech it can sound like a quick tap.",
+  noteZh:"连读保留两个词，it‿is 仍然是两个音节。缩写 it’s 只有一个音节。这里用 /t/ 标出连接位置，自然美音中有时会听成轻快的闪音。"},
  {title:"Consonant + vowel",zh:"辅音 + 元音：尾辅音当作后词的开头",
   desc:"When a word ends in a consonant and the next starts with a vowel, move the consonant across and say it in one breath.",
   descZh:"前词以辅音结尾、后词以元音开头时，把尾辅音当成后词的“开头”，一口气读完。",
   type:"rows",items:[
    R("get up","ge-'TUP"),R("put on","pu-'TON"),R("not at all","no-ta-'TALL",{zh:"美音进一步闪音化：no-da-dall"}),
-   R("pick it up","pi-ki-'TUP"),R("an apple","_ə_-'NAP-ple"),R("check it out","che-ki-'TOUT"),R("hold on","hol-'DON"),R("come in","co-'MIN")
+   R("pick it up","pi-ki-'TUP"),R("an apple","_ə_-'NAP-ple"),R("check it out","che-ki-'TOUT"),R("work out","wor-'KOUT",{t:"I hope things work out.",ipa:"/k‿aʊ/",zh:"希望一切顺利。",examples:[["I hope things work out.", "希望一切顺利。"], ["We can work out the details later.", "我们可以之后再敲定细节。"]]}),R("hold on","hol-'DON"),R("come in","co-'MIN")
   ]},
  {title:"Linking can fool your ears",zh:"连读会让短语听起来一样",
   desc:"Because consonants hop across word edges, some phrases sound almost identical. Only context tells them apart.",
@@ -1133,14 +1162,14 @@ D.link=[
   desc:"After /iː/, /ɪ/, /eɪ/, /aɪ/ or /ɔɪ/ your lips are already spread, so a very light y slips in. Don't push it.",
   descZh:"前词以 /iː/ /ɪ/ /eɪ/ /aɪ/ /ɔɪ/ 结尾、后接元音：嘴角向两边拉开时，自然带出极轻的 /j/，不要用力。",
   type:"rows",items:[
-   R("I am","I-[y]'AM"),R("say it","'SAY-[y]it"),R("the end","_ði_-[y]'END"),
+   R("I am","I-[y]'AM"),R("see it","'SEE-[y]it",{examples:[["Can you see it?", "你看得到吗？"], ["I'll see it tomorrow.", "我明天会去看。"]]}),R("say it","'SAY-[y]it"),R("the end","_ði_-[y]'END"),
    R("be able","be-[y]'A-ble"),R("my eyes","my-[y]'EYES"),R("three apples","'THREE-[y]'AP-ples")
   ]},
  {title:"Vowel + vowel: add a light /w/",zh:"元音 + 元音：加 /w/",
   desc:"After /uː/, /ʊ/, /oʊ/ or /aʊ/ your lips are already rounded, so a light w slips in.",
   descZh:"前词以 /uː/ /ʊ/ /əʊ/ /aʊ/ 结尾、后接元音：双唇提前收圆，自然滑出轻微的 /w/。",
   type:"rows",items:[
-   R("go on","go-[w]'ON"),R("do it","'DO-[w]it"),R("how about","how-[w]a-'BOUT"),
+   R("go on","go-[w]'ON"),R("go out","go-[w]'OUT",{examples:[["Let's go out tonight.", "我们今晚出去吧。"], ["Don't go out in the rain.", "下雨时别出去。"]]}),R("do it","'DO-[w]it"),R("how about","how-[w]a-'BOUT"),
    R("who is","'WHO-[w]is"),R("two eggs","'TWO-[w]'EGGS"),R("so I said","'SO-[w]I 'SAID")
   ]},
  {title:"Linking r",zh:"r / re + 元音（英音）",
@@ -1194,7 +1223,7 @@ D.flap=[
   type:"rows",items:[
    R("water","'WA-{d}er",{acc:"US"}),R("better","'BE-{d}er",{acc:"US"}),R("city","'CI-{d}y",{acc:"US"}),
    R("party","'PAR-{d}y",{acc:"US",zh:"r 后面也会"}),R("little","'LI-{d}le",{acc:"US"}),R("getting","'GE-{d}ing",{acc:"US"}),
-   R("get it","'GE-{d}it",{acc:"US",zh:"跨词也会"}),R("what about","wha-{d}a-'BOUT",{acc:"US"}),R("not at all","no-{d}a-'{D}ALL",{acc:"US"})
+   R("get it","'GE-{d}it",{acc:"US",zh:"跨词也会"}),R("put it on","'PU-{d}it 'ON",{acc:"US",zh:"注意 put 和 it 之间的闪音。",examples:[["Put it on and see if it fits.", "穿上看看合不合身。"], ["I put it on before I left.", "我出门前就穿上了。"]]}),R("what about","wha-{d}a-'BOUT",{acc:"US"}),R("not at all","no-{d}a-'{D}ALL",{acc:"US"})
   ],
   fix:true,note:"The original sheet calls this 浊化 (voicing). It is really a different sound, the flap /ɾ/. Inside a word it only happens before an unstressed syllable; across words, a final t before a vowel taps anyway.",
   noteZh:"原表称之为“浊化”，其实这是闪音 /ɾ/。单词内部只在后一个音节不重读时发生；跨词时，词尾 t 后接元音基本都会闪。"},
@@ -1316,6 +1345,15 @@ function metaHTML(x){
 }
 function rowHTML(x){
   if(x.grp!==undefined) return grpLi(x);
+  if(x.examples){
+    var sentences=x.examples.map(function(example){
+      return '<div class="sentence-example"><div><span>'+esc(example[0])+'</span>'+
+        '<span class="zh" lang="zh">'+esc(example[1])+'</span></div>'+btns(example[0],x.acc)+'</div>';
+    }).join("");
+    return '<li class="with-sentences"><div class="w">'+esc(x.w)+accTag(x.acc)+'</div>'+
+      '<div class="say" aria-label="'+esc(x.w)+'">'+sayHTML(x.s)+'</div>'+metaHTML(x)+
+      '<div class="sentence-examples">'+sentences+'</div></li>';
+  }
   var t=x.t||x.w;
   return '<li><div class="w">'+esc(x.w)+accTag(x.acc)+'</div><div class="say" aria-label="'+esc(t)+'">'+sayHTML(x.s)+'</div>'+btns(t,x.acc,x.f)+metaHTML(x)+'</li>';
 }
